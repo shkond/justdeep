@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Game.Core;
@@ -176,7 +174,7 @@ public partial class MainWindowViewModel : ViewModelBase
             EnemyInfo = "";
         }
 
-        // ログの最新10件を表示
+        // ログの最新15件を表示
         var recentLogs = _gameManager.GameLog.TakeLast(15);
         ActionLog = string.Join("\n", recentLogs);
     }
