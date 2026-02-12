@@ -4,6 +4,11 @@ public class GameManager
 {
     private readonly Random _random = new();
 
+    // ── Tick timing ──
+    private double _actionTimer;
+    private double _actionInterval = 1.0; // seconds per action
+
+    // ── Public state (read-only) ──
     public Player Player { get; private set; }
     public Enemy? CurrentEnemy { get; private set; }
     public GameState CurrentState { get; private set; }
@@ -18,15 +23,65 @@ public class GameManager
         CurrentFloor = 1;
     }
 
+    // ══════════════════════════════════════════════
+    //  Public API
+    // ══════════════════════════════════════════════
+
+    /// <summary>
+    /// Initialize a new game and transition to InDungeon.
+    /// The game will then advance only through Tick().
+    /// </summary>
     public void StartNewGame(string playerName)
     {
         Player = new Player(playerName);
         CurrentFloor = 1;
         RoomsExplored = 0;
+        _actionTimer = 0;
         GameLog.Clear();
         CurrentState = GameState.InDungeon;
         AddToLog($"{playerName}の冒険が始まった！");
         AddToLog($"ダンジョン 第{CurrentFloor}階に入った。");
+    }
+
+    /// <summary>
+    /// Main loop entry point. Called every frame (60fps).
+    /// Accumulates dt and executes one action when enough time has passed.
+    /// </summary>
+    public void Tick(double dt)
+    {
+        // Only tick in active play states
+        if (CurrentState != GameState.InDungeon
+            && CurrentState != GameState.InCombat
+            && CurrentState != GameState.Returning)
+        {
+            return;
+        }
+
+        _actionTimer += dt;
+
+        if (_actionTimer >= _actionInterval)
+        {
+            _actionTimer -= _actionInterval;
+            ExecuteAction();
+        }
+    }
+
+    /// <summary>
+    /// Potion can be used at any time by the player.
+    /// </summary>
+    public void UsePotion()
+    {
+        int potionCost = 30;
+        if (Player.SpendGold(potionCost))
+        {
+            int healAmount = 50;
+            Player.Heal(healAmount);
+            AddToLog($"ポーションを使用！ HP {healAmount} 回復！（-{potionCost} ゴールド）");
+        }
+        else
+        {
+            AddToLog("ゴールドが足りません！");
+        }
     }
 
     public void AddToLog(string message)
@@ -34,43 +89,86 @@ public class GameManager
         GameLog.Add(message);
     }
 
-    public DungeonRoom ExploreRoom()
-    {
-        if (CurrentState != GameState.InDungeon)
-            return DungeonRoom.Empty;
+    // ══════════════════════════════════════════════
+    //  Private — action dispatch
+    // ══════════════════════════════════════════════
 
+    private void ExecuteAction()
+    {
+        switch (CurrentState)
+        {
+            case GameState.InDungeon:
+                var room = ExploreRoom();
+                HandleExploreResult(room);
+                break;
+
+            case GameState.InCombat:
+                PlayerAttack();
+                break;
+
+            case GameState.Returning:
+                // Phase 0 placeholder: immediate return to base
+                AddToLog("帰還中… （未実装：即座に帰還）");
+                CurrentState = GameState.InBase;
+                break;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    //  Private — exploration
+    // ══════════════════════════════════════════════
+
+    private DungeonRoom ExploreRoom()
+    {
         RoomsExplored++;
 
-        // 5部屋ごとにボス
+        // Boss every 5 rooms
         if (RoomsExplored % 5 == 0)
         {
             return DungeonRoom.Boss;
         }
 
-        // ランダムな部屋タイプ
         int roll = _random.Next(100);
-        if (roll < 50) // 50% 敵
-        {
+        if (roll < 50)
             return DungeonRoom.Enemy;
-        }
-        else if (roll < 70) // 20% 宝箱
-        {
+        else if (roll < 70)
             return DungeonRoom.Treasure;
-        }
-        else if (roll < 85) // 15% ショップ
-        {
+        else if (roll < 85)
             return DungeonRoom.Shop;
-        }
-        else // 15% 空部屋
-        {
+        else
             return DungeonRoom.Empty;
+    }
+
+    private void HandleExploreResult(DungeonRoom room)
+    {
+        switch (room)
+        {
+            case DungeonRoom.Enemy:
+                EnterCombat(false);
+                break;
+            case DungeonRoom.Boss:
+                EnterCombat(true);
+                break;
+            case DungeonRoom.Treasure:
+                OpenTreasure();
+                break;
+            case DungeonRoom.Shop:
+                AddToLog("ショップを見つけた！");
+                break;
+            case DungeonRoom.Empty:
+                AddToLog("空の部屋だ。");
+                break;
         }
     }
 
-    public void EnterCombat(bool isBoss = false)
+    // ══════════════════════════════════════════════
+    //  Private — combat
+    // ══════════════════════════════════════════════
+
+    private void EnterCombat(bool isBoss)
     {
         CurrentState = GameState.InCombat;
-        
+
         if (isBoss)
         {
             CurrentEnemy = Enemy.CreateDragon(CurrentFloor);
@@ -89,124 +187,62 @@ public class GameManager
         }
     }
 
-    public CombatResult PlayerAttack()
+    private void PlayerAttack()
     {
         if (CurrentEnemy == null || CurrentState != GameState.InCombat)
-        {
-            return new CombatResult { Message = "戦闘中ではありません。" };
-        }
+            return;
 
-        var result = new CombatResult();
-        
-        // プレイヤーの攻撃
+        // Player attacks
         int damage = Math.Max(1, Player.Attack - CurrentEnemy.Defense);
-        damage += _random.Next(-2, 3); // ランダム性
+        damage += _random.Next(-2, 3);
         damage = Math.Max(1, damage);
-        
+
         CurrentEnemy.TakeDamage(damage);
-        result.DamageDealt = damage;
         AddToLog($"{Player.Name}の攻撃！ {CurrentEnemy.Name}に{damage}ダメージ！");
 
         if (!CurrentEnemy.IsAlive)
         {
-            result.PlayerWon = true;
             AddToLog($"{CurrentEnemy.Name}を倒した！");
-            
+
             Player.GainExperience(CurrentEnemy.ExpReward);
             Player.AddGold(CurrentEnemy.GoldReward);
             AddToLog($"経験値 {CurrentEnemy.ExpReward} と ゴールド {CurrentEnemy.GoldReward} を獲得！");
-            
-            if (RoomsExplored % 5 == 0) // ボス撃破
+
+            if (RoomsExplored % 5 == 0) // Boss defeated
             {
                 CurrentFloor++;
                 RoomsExplored = 0;
                 AddToLog($"ダンジョン 第{CurrentFloor}階に進んだ！");
             }
-            
+
             CurrentEnemy = null;
             CurrentState = GameState.InDungeon;
-            result.Message = "戦闘に勝利した！";
-            return result;
+            return;
         }
 
-        // 敵の反撃
+        // Enemy counterattack
         int enemyDamage = Math.Max(1, CurrentEnemy.Attack - Player.Defense);
         enemyDamage += _random.Next(-2, 3);
         enemyDamage = Math.Max(1, enemyDamage);
-        
+
         Player.TakeDamage(enemyDamage);
-        result.DamageTaken = enemyDamage;
         AddToLog($"{CurrentEnemy.Name}の攻撃！ {Player.Name}に{enemyDamage}ダメージ！");
 
         if (!Player.IsAlive)
         {
-            result.PlayerWon = false;
             CurrentState = GameState.GameOver;
             AddToLog("冒険者は力尽きた...");
-            result.Message = "Game Over";
-            return result;
-        }
-
-        result.Message = "戦闘続行中";
-        return result;
-    }
-
-    public bool RunAway()
-    {
-        if (CurrentState != GameState.InCombat || CurrentEnemy == null)
-            return false;
-
-        int escapeChance = _random.Next(100);
-        if (escapeChance < 60) // 60% 成功率
-        {
-            AddToLog("逃げ出した！");
-            CurrentEnemy = null;
-            CurrentState = GameState.InDungeon;
-            return true;
-        }
-        else
-        {
-            AddToLog("逃げられなかった！");
-            // 敵の攻撃を受ける
-            int enemyDamage = Math.Max(1, CurrentEnemy.Attack - Player.Defense);
-            Player.TakeDamage(enemyDamage);
-            AddToLog($"{CurrentEnemy.Name}の攻撃！ {Player.Name}に{enemyDamage}ダメージ！");
-            
-            if (!Player.IsAlive)
-            {
-                CurrentState = GameState.GameOver;
-                AddToLog("冒険者は力尽きた...");
-            }
-            return false;
         }
     }
 
-    public void OpenTreasure()
+    // ══════════════════════════════════════════════
+    //  Private — misc actions
+    // ══════════════════════════════════════════════
+
+    private void OpenTreasure()
     {
         int goldFound = _random.Next(20, 50) + CurrentFloor * 10;
         Player.AddGold(goldFound);
         AddToLog($"宝箱を発見！ ゴールド {goldFound} を獲得！");
-    }
-
-    public void UsePotion()
-    {
-        int potionCost = 30;
-        if (Player.SpendGold(potionCost))
-        {
-            int healAmount = 50;
-            Player.Heal(healAmount);
-            AddToLog($"ポーションを使用！ HP {healAmount} 回復！（-{potionCost} ゴールド）");
-        }
-        else
-        {
-            AddToLog("ゴールドが足りません！");
-        }
-    }
-
-    public void Rest()
-    {
-        int healAmount = Player.MaxHp / 4;
-        Player.Heal(healAmount);
-        AddToLog($"休息した。HP {healAmount} 回復！");
     }
 }

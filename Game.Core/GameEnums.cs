@@ -7,7 +7,9 @@ public enum GameState
     InCombat,
     Shopping,
     GameOver,
-    Victory
+    Victory,
+    Returning,
+    InBase
 }
 
 public enum DungeonRoom

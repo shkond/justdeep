@@ -33,7 +33,7 @@
                     <TextBlock Text="新しい冒険を始める" FontSize="18" FontWeight="Bold"/>
                     <TextBlock Text="プレイヤー名:"/>
                     <TextBox Text="{Binding PlayerName}" Width="200" HorizontalAlignment="Left"/>
-                    <Button Content="ゲーム開始" Command="{Binding StartGameCommand}" 
+                    <Button Content="ゲーム開始（自動探索）" Command="{Binding StartGameCommand}" 
                             Width="200" HorizontalAlignment="Left"/>
                 </StackPanel>
 
@@ -59,24 +59,9 @@
                                    Padding="10"/>
                     </StackPanel>
 
-                    <!-- ダンジョン探索ボタン -->
-                    <StackPanel IsVisible="{Binding IsInDungeon}" Spacing="5">
-                        <TextBlock Text="行動" FontSize="16" FontWeight="Bold"/>
-                        <Button Content="部屋を探索する" Command="{Binding ExploreCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
-                        <Button Content="休息する（HP回復）" Command="{Binding RestCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
-                        <Button Content="ポーション使用（30ゴールド）" Command="{Binding UsePotionCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
-                    </StackPanel>
-
-                    <!-- 戦闘ボタン -->
-                    <StackPanel IsVisible="{Binding IsInCombat}" Spacing="5">
-                        <TextBlock Text="戦闘" FontSize="16" FontWeight="Bold"/>
-                        <Button Content="攻撃する" Command="{Binding AttackCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
-                        <Button Content="逃げる" Command="{Binding RunAwayCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
+                    <!-- ポーション（いつでも使用可能） -->
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="アイテム" FontSize="16" FontWeight="Bold"/>
                         <Button Content="ポーション使用（30ゴールド）" Command="{Binding UsePotionCommand}" 
                                 Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
