@@ -16,14 +16,6 @@ Tick() は毎フレーム呼ばれる（1/60秒固定）。
 
 actionInterval は最初は固定（例: 探索1.0s、戦闘1.0s、帰還判定1.0s）でOK；あとで施設/装備/バフで短縮可能にする。
 
-2) 撤退→帰還（遭遇リスク）モデル
-遠征開始からの経過時間を T_expedition とする。
-
-撤退ルール発火時点で T_return_target = T_expedition / 2 を固定し、帰還状態に遷移する（あなたの「半分かかる」を厳密に満たす）。
-
-帰還中は「一定距離（時間）ごとに判定」なので、returnCheckTimer が returnCheckInterval を超えるたびに確率 p_encounter で戦闘突入。
-
-戦闘に入ると帰還タイマーは止める/進める、どちらにするかは設計選択（止める方が“危険で遅れる”感が出る）。
 
 3) Seed込みセーブ（互換性NO）
 現状 GameManager が new Random() を内部で持つので、ロードで同じ未来を再現できません。
@@ -31,13 +23,14 @@ actionInterval は最初は固定（例: 探索1.0s、戦闘1.0s、帰還判定1
 
 自前RNG（Xoshiro）で状態（ulong×2など）をそのままJSON保存
 
+
 具体的なIssue分割（最初の5枚）
 
 GameState拡張と遠征状態機械
 
 GameState に Returning と InBase（拠点）を追加（今は MainMenu/InDungeon/InCombat/... だけ）。
 
-GameManager に「遠征開始時刻」「撤退開始時刻」「帰還残り時間」を持たせる。
+
 
 Tick基盤の追加
 
