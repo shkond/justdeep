@@ -5,12 +5,13 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Game.Core;
+using Game.Core.States;
 
 namespace Game.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly GameManager _gameManager;
+    private readonly GameEngine _engine;
     private readonly DispatcherTimer _tickTimer;
     private readonly Stopwatch _stopwatch;
 
@@ -40,7 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        _gameManager = new GameManager();
+        _engine = new GameEngine();
 
         _stopwatch = new Stopwatch();
 
@@ -57,7 +58,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void StartGame()
     {
-        _gameManager.StartNewGame(PlayerName);
+        _engine.StartNewGame(PlayerName);
         IsMainMenu = false;
         IsPlaying = true;
 
@@ -70,7 +71,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void UsePotion()
     {
-        _gameManager.UsePotion();
+        _engine.UsePotion();
         UpdateDisplay();
     }
 
@@ -79,19 +80,19 @@ public partial class MainWindowViewModel : ViewModelBase
         double dt = _stopwatch.Elapsed.TotalSeconds;
         _stopwatch.Restart();
 
-        _gameManager.Tick(dt);
+        _engine.Tick(dt);
 
         // Sync UI state
-        IsInCombat = _gameManager.CurrentState == GameState.InCombat;
+        IsInCombat = _engine.CurrentMode.ModeId == GameState.InCombat;
 
-        if (_gameManager.CurrentState == GameState.GameOver
-            || _gameManager.CurrentState == GameState.InBase)
+        if (_engine.Session.CurrentStateId == GameState.GameOver
+            || _engine.Session.CurrentStateId == GameState.InBase)
         {
             _tickTimer.Stop();
             _stopwatch.Stop();
             IsPlaying = false;
 
-            if (_gameManager.CurrentState == GameState.GameOver)
+            if (_engine.Session.CurrentStateId == GameState.GameOver)
             {
                 IsMainMenu = true;
             }
@@ -102,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void UpdateDisplay()
     {
-        var player = _gameManager.Player;
+        var player = _engine.Session.Player;
 
         PlayerStats = $"【{player.Name}】\n" +
                      $"レベル: {player.Level}\n" +
@@ -112,12 +113,12 @@ public partial class MainWindowViewModel : ViewModelBase
                      $"経験値: {player.Experience}/{player.Level * 100}\n" +
                      $"ゴールド: {player.Gold}";
 
-        GameStatus = $"現在地: ダンジョン {_gameManager.CurrentFloor}階\n" +
-                    $"探索した部屋: {_gameManager.RoomsExplored}/5";
+        GameStatus = $"現在地: ダンジョン {_engine.Session.CurrentFloor}階\n" +
+                    $"探索した部屋: {_engine.Session.RoomsExplored}/5";
 
-        if (IsInCombat && _gameManager.CurrentEnemy != null)
+        if (IsInCombat && _engine.Session.CurrentEnemy != null)
         {
-            var enemy = _gameManager.CurrentEnemy;
+            var enemy = _engine.Session.CurrentEnemy;
             EnemyInfo = $"【{enemy.Name}】\n" +
                        $"HP: {enemy.CurrentHp}/{enemy.MaxHp}\n" +
                        $"攻撃力: {enemy.Attack}\n" +
@@ -129,7 +130,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // Show the most recent 15 log entries
-        var recentLogs = _gameManager.GameLog.TakeLast(15);
+        var recentLogs = _engine.Session.GameLog.TakeLast(15);
         ActionLog = string.Join("\n", recentLogs);
     }
 }

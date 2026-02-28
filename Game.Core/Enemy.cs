@@ -76,4 +76,24 @@ public class Enemy
             50 + floor * 15
         );
     }
+
+    // ── Save/Load ──
+
+    public Save.EnemySaveData ToSaveData() => new()
+    {
+        Name = Name,
+        MaxHp = MaxHp,
+        CurrentHp = CurrentHp,
+        Attack = Attack,
+        Defense = Defense,
+        ExpReward = ExpReward,
+        GoldReward = GoldReward
+    };
+
+    public static Enemy FromSaveData(Save.EnemySaveData data) => new(
+        data.Name, data.MaxHp, data.Attack, data.Defense, data.ExpReward, data.GoldReward
+    )
+    {
+        CurrentHp = data.CurrentHp
+    };
 }
