@@ -108,6 +108,17 @@ public class GameEngine
         }
     }
 
+    /// <summary>
+    /// Launch a new expedition from base. Only valid in InBase state.
+    /// </summary>
+    public void LaunchExpedition()
+    {
+        if (Session.CurrentStateId != GameState.InBase) return;
+        Session.RoomsExplored = 0;
+        Session.AddToLog($"第{Session.CurrentFloor}階への遠征を開始！");
+        TransitionTo(new InDungeonMode());
+    }
+
     // ══════════════════════════════════════════════
     //  Save / Load (DTO conversion only — no I/O)
     // ══════════════════════════════════════════════

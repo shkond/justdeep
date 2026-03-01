@@ -224,4 +224,67 @@ public class GameEngineTests
         Assert.Equal("Hero", save.SessionState.PlayerName);
         Assert.NotNull(save.ModeState);
     }
+
+    // ── InBaseMode recovery ──
+
+    [Fact]
+    public void InBaseMode_FullRecovery_Within10Seconds()
+    {
+        var engine = CreateStartedEngine();
+        engine.Session.Player.CurrentHp = 1;
+        engine.TransitionTo(new InBaseMode());
+
+        // Tick 20 times at 0.5s each = 10 seconds
+        for (int i = 0; i < 20; i++)
+        {
+            engine.Tick(0.5);
+        }
+
+        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+    }
+
+    [Fact]
+    public void InBaseMode_DoesNotOverheal()
+    {
+        var engine = CreateStartedEngine();
+        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp - 1;
+        engine.TransitionTo(new InBaseMode());
+
+        // Many ticks
+        for (int i = 0; i < 40; i++)
+        {
+            engine.Tick(0.5);
+        }
+
+        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+    }
+
+    // ── LaunchExpedition ──
+
+    [Fact]
+    public void LaunchExpedition_FromBase_TransitionsToInDungeon()
+    {
+        var engine = CreateStartedEngine();
+        engine.TransitionTo(new InBaseMode());
+        Assert.Equal(GameState.InBase, engine.Session.CurrentStateId);
+
+        engine.LaunchExpedition();
+
+        Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
+        Assert.IsType<InDungeonMode>(engine.CurrentMode);
+        Assert.Equal(0, engine.Session.RoomsExplored);
+    }
+
+    [Fact]
+    public void LaunchExpedition_NotInBase_DoesNothing()
+    {
+        var engine = CreateStartedEngine();
+        Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
+
+        engine.LaunchExpedition();
+
+        // Should remain in dungeon, not reset rooms
+        Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
+    }
 }
+

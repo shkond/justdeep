@@ -39,6 +39,18 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _enemyInfo = "";
 
+    [ObservableProperty]
+    private bool _isInBase = false;
+
+    [ObservableProperty]
+    private string _baseStatusText = "";
+
+    [ObservableProperty]
+    private double _hpPercent = 100;
+
+    [ObservableProperty]
+    private bool _canLaunchExpedition = false;
+
     public MainWindowViewModel()
     {
         _engine = new GameEngine();
@@ -75,6 +87,15 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateDisplay();
     }
 
+    [RelayCommand]
+    private void LaunchExpedition()
+    {
+        _engine.LaunchExpedition();
+        IsInBase = false;
+        IsPlaying = true;
+        UpdateDisplay();
+    }
+
     private void OnTick(object? sender, EventArgs e)
     {
         double dt = _stopwatch.Elapsed.TotalSeconds;
@@ -84,18 +105,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Sync UI state
         IsInCombat = _engine.CurrentMode.ModeId == GameState.InCombat;
+        IsInBase = _engine.CurrentMode.ModeId == GameState.InBase;
 
-        if (_engine.Session.CurrentStateId == GameState.GameOver
-            || _engine.Session.CurrentStateId == GameState.InBase)
+        if (_engine.Session.CurrentStateId == GameState.GameOver)
         {
             _tickTimer.Stop();
             _stopwatch.Stop();
             IsPlaying = false;
-
-            if (_engine.Session.CurrentStateId == GameState.GameOver)
-            {
-                IsMainMenu = true;
-            }
+            IsMainMenu = true;
         }
 
         UpdateDisplay();
@@ -113,8 +130,28 @@ public partial class MainWindowViewModel : ViewModelBase
                      $"経験値: {player.Experience}/{player.Level * 100}\n" +
                      $"ゴールド: {player.Gold}";
 
-        GameStatus = $"現在地: ダンジョン {_engine.Session.CurrentFloor}階\n" +
-                    $"探索した部屋: {_engine.Session.RoomsExplored}/5";
+        if (IsInBase)
+        {
+            var baseMode = _engine.CurrentMode as InBaseMode;
+            HpPercent = player.MaxHp > 0 ? (double)player.CurrentHp / player.MaxHp * 100 : 100;
+            CanLaunchExpedition = player.CurrentHp >= player.MaxHp;
+
+            if (player.CurrentHp >= player.MaxHp)
+            {
+                BaseStatusText = "HP全回復！ 遠征の準備が整った。";
+            }
+            else
+            {
+                BaseStatusText = $"休息中… HP: {player.CurrentHp}/{player.MaxHp}";
+            }
+
+            GameStatus = $"現在地: 拠点\n階層到達: {_engine.Session.CurrentFloor}階";
+        }
+        else
+        {
+            GameStatus = $"現在地: ダンジョン {_engine.Session.CurrentFloor}階\n" +
+                        $"探索した部屋: {_engine.Session.RoomsExplored}/5";
+        }
 
         if (IsInCombat && _engine.Session.CurrentEnemy != null)
         {
@@ -134,3 +171,4 @@ public partial class MainWindowViewModel : ViewModelBase
         ActionLog = string.Join("\n", recentLogs);
     }
 }
+

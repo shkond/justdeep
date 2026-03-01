@@ -59,8 +59,35 @@
                                    Padding="10"/>
                     </StackPanel>
 
+                    <!-- 拠点パネル（InBase中のみ） -->
+                    <StackPanel IsVisible="{Binding IsInBase}" Spacing="8">
+                        <TextBlock Text="── 拠点 ──" FontSize="16" FontWeight="Bold"
+                                   Foreground="#2E7D32"/>
+
+                        <!-- HP回復プログレスバー -->
+                        <TextBlock Text="HP 回復状況" FontSize="13" Margin="0,4,0,0"/>
+                        <ProgressBar Minimum="0" Maximum="100" 
+                                     Value="{Binding HpPercent}"
+                                     Height="20"
+                                     Foreground="#4CAF50"
+                                     Background="#E0E0E0"/>
+
+                        <TextBlock Text="{Binding BaseStatusText}" 
+                                   FontFamily="Courier New"
+                                   Background="#E8F5E9"
+                                   Padding="10"
+                                   FontSize="13"/>
+
+                        <!-- 再遠征ボタン -->
+                        <Button Content="再遠征する" 
+                                Command="{Binding LaunchExpeditionCommand}"
+                                IsEnabled="{Binding CanLaunchExpedition}"
+                                Width="200" HorizontalAlignment="Left"
+                                FontSize="14" FontWeight="Bold"/>
+                    </StackPanel>
+
                     <!-- ポーション（いつでも使用可能） -->
-                    <StackPanel Spacing="5">
+                    <StackPanel Spacing="5" IsVisible="{Binding !IsInBase}">
                         <TextBlock Text="アイテム" FontSize="16" FontWeight="Bold"/>
                         <Button Content="ポーション使用（30ゴールド）" Command="{Binding UsePotionCommand}" 
                                 Width="200" HorizontalAlignment="Left"/>
