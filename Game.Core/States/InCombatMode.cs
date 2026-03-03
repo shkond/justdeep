@@ -63,6 +63,13 @@ public class InCombatMode : IGameMode
             session.CurrentEnemy = null;
             _enemy = null;
         }
+        else if (player.ShouldRetreat)
+        {
+            session.AddToLog($"HP危険！ 戦闘を離脱して撤退を開始する！（HP: {player.CurrentHp}/{player.MaxHp}）");
+            session.CurrentEnemy = null;
+            _enemy = null;
+            engine.TransitionTo(new ReturningMode(session.CurrentFloor));
+        }
     }
 
     public void Exit(GameSession session, GameEngine engine)
@@ -97,6 +104,16 @@ public class InCombatMode : IGameMode
 
         session.CurrentEnemy = null;
         _enemy = null;
-        engine.TransitionTo(new InDungeonMode());
+
+        // Retreat if HP is critical after victory
+        if (session.Player.ShouldRetreat)
+        {
+            session.AddToLog($"HP危険！ 撤退を開始する！（HP: {session.Player.CurrentHp}/{session.Player.MaxHp}）");
+            engine.TransitionTo(new ReturningMode(session.CurrentFloor));
+        }
+        else
+        {
+            engine.TransitionTo(new InDungeonMode());
+        }
     }
 }

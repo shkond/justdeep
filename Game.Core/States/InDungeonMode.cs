@@ -39,6 +39,14 @@ public class InDungeonMode : IGameMode
             room = DungeonRoom.Empty;
 
         HandleRoom(room, session, engine);
+
+        // After room event, check retreat condition (only if we haven't already
+        // transitioned to combat — combat handles its own HP checks)
+        if (engine.CurrentMode == this && session.Player.ShouldRetreat)
+        {
+            session.AddToLog($"HP危険！ 撤退を開始する！（HP: {session.Player.CurrentHp}/{session.Player.MaxHp}）");
+            engine.TransitionTo(new ReturningMode(session.CurrentFloor));
+        }
     }
 
     public void Exit(GameSession session, GameEngine engine) { }

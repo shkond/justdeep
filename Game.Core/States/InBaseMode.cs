@@ -40,7 +40,8 @@ public class InBaseMode : IGameMode
         else if (!IsFullyRecovered)
         {
             IsFullyRecovered = true;
-            session.AddToLog("HP全回復。冒険の準備が整った。");
+            session.AddToLog("HP全回復。再遠征を自動開始する。");
+            engine.LaunchExpedition();
         }
     }
 

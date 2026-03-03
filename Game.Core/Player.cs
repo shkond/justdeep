@@ -25,6 +25,12 @@ public class Player
 
     public bool IsAlive => CurrentHp > 0;
 
+    /// <summary>Current HP as a percentage (0–100).</summary>
+    public double HpPercent => MaxHp > 0 ? (double)CurrentHp / MaxHp * 100 : 0;
+
+    /// <summary>True when HP falls to 30% or below — signals retreat.</summary>
+    public bool ShouldRetreat => IsAlive && HpPercent <= 30;
+
     public void TakeDamage(int damage)
     {
         int actualDamage = Math.Max(1, damage - Defense);

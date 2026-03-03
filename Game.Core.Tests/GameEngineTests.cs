@@ -250,12 +250,14 @@ public class GameEngineTests
         engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp - 1;
         engine.TransitionTo(new InBaseMode());
 
-        // Many ticks
+        // Tick until auto-expedition fires or cap out
         for (int i = 0; i < 40; i++)
         {
             engine.Tick(0.5);
+            if (engine.Session.CurrentStateId == GameState.InDungeon) break;
         }
 
+        // HP should be exactly MaxHp (not overhealed)
         Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
     }
 
@@ -286,5 +288,133 @@ public class GameEngineTests
         // Should remain in dungeon, not reset rooms
         Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
     }
-}
 
+    // ── HP-based retreat ──
+
+    [Fact]
+    public void InCombat_HpBelow30Percent_AfterVictory_TriggersRetreat()
+    {
+        var engine = CreateStartedEngine();
+
+        // Force into combat with a weak enemy
+        var weakEnemy = new Enemy("スライム", 1, 10, 0, 10, 5);
+        engine.Session.CurrentEnemy = weakEnemy;
+        engine.TransitionTo(new InCombatMode());
+
+        // Set player HP to 25% (below 30% threshold)
+        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 25 / 100;
+
+        // Tick enough for combat to resolve (enemy has only 1 HP)
+        for (int i = 0; i < 10; i++)
+        {
+            engine.Tick(1.0);
+            if (engine.CurrentMode.ModeId != GameState.InCombat) break;
+        }
+
+        // Should have transitioned to Returning (not InDungeon) due to low HP
+        Assert.Equal(GameState.Returning, engine.Session.CurrentStateId);
+        Assert.IsType<ReturningMode>(engine.CurrentMode);
+    }
+
+    [Fact]
+    public void InCombat_HpBelow30Percent_MidCombat_FleesToReturning()
+    {
+        var engine = CreateStartedEngine();
+
+        // Force into combat with a strong enemy
+        var strongEnemy = new Enemy("ドラゴン", 999, 50, 0, 10, 5);
+        engine.Session.CurrentEnemy = strongEnemy;
+        engine.TransitionTo(new InCombatMode());
+
+        // Run combat ticks — player will get hit and HP will drop
+        for (int i = 0; i < 50; i++)
+        {
+            engine.Tick(1.0);
+            var state = engine.Session.CurrentStateId;
+            if (state == GameState.Returning || state == GameState.GameOver) break;
+        }
+
+        // Should have either fled (Returning) or died (GameOver)
+        var finalState = engine.Session.CurrentStateId;
+        Assert.True(
+            finalState == GameState.Returning || finalState == GameState.GameOver,
+            $"Expected Returning or GameOver, got {finalState}");
+    }
+
+    [Fact]
+    public void InDungeon_HpBelow30Percent_TriggersRetreat()
+    {
+        var engine = CreateStartedEngine();
+
+        // Set HP to 20% — should trigger retreat on next non-combat room
+        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 20 / 100;
+
+        // Tick until state changes
+        for (int i = 0; i < 20; i++)
+        {
+            engine.Tick(1.0);
+            var state = engine.Session.CurrentStateId;
+            if (state != GameState.InDungeon && state != GameState.InCombat) break;
+        }
+
+        // Should end up Returning (possibly via combat first)
+        var finalState = engine.Session.CurrentStateId;
+        Assert.True(
+            finalState == GameState.Returning || finalState == GameState.GameOver,
+            $"Expected Returning or GameOver with low HP, got {finalState}");
+    }
+
+    [Fact]
+    public void InBase_FullRecovery_AutoLaunchesExpedition()
+    {
+        var engine = CreateStartedEngine();
+        engine.Session.Player.CurrentHp = 1;
+        engine.TransitionTo(new InBaseMode());
+
+        // Tick enough for full recovery (20 ticks × 0.5s = 10s)
+        for (int i = 0; i < 30; i++)
+        {
+            engine.Tick(0.5);
+            if (engine.Session.CurrentStateId == GameState.InDungeon) break;
+        }
+
+        // Should have auto-transitioned to InDungeon
+        Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
+        Assert.IsType<InDungeonMode>(engine.CurrentMode);
+    }
+
+    [Fact]
+    public void FullCycle_Retreat_Recover_Reexpedition()
+    {
+        var engine = CreateStartedEngine();
+
+        // Set HP low to trigger retreat on next room
+        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 20 / 100;
+
+        // Phase 1: Tick until retreating
+        for (int i = 0; i < 50; i++)
+        {
+            engine.Tick(1.0);
+            if (engine.Session.CurrentStateId == GameState.Returning) break;
+            if (engine.Session.CurrentStateId == GameState.GameOver) return; // Can't test further
+        }
+        Assert.Equal(GameState.Returning, engine.Session.CurrentStateId);
+
+        // Phase 2: Tick until at base
+        for (int i = 0; i < 50; i++)
+        {
+            engine.Tick(0.5);
+            if (engine.Session.CurrentStateId == GameState.InBase) break;
+        }
+        Assert.Equal(GameState.InBase, engine.Session.CurrentStateId);
+
+        // Phase 3: Tick until auto-expedition launches
+        for (int i = 0; i < 50; i++)
+        {
+            engine.Tick(0.5);
+            if (engine.Session.CurrentStateId == GameState.InDungeon) break;
+        }
+        Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
+        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+    }
+}
