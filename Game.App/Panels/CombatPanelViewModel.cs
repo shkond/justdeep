@@ -5,8 +5,7 @@ namespace Game.App.Panels;
 
 /// <summary>
 /// Combat panel — visible only during InCombat mode.
-/// Shows enemy info and combat actions.
-/// Reacts to ModeChangedEvent for visibility, StatsChangedEvent for enemy info.
+/// Shows enemy info. Reacts to state changes for visibility and enemy data.
 /// </summary>
 public partial class CombatPanelViewModel : PanelViewModelBase
 {
@@ -16,36 +15,25 @@ public partial class CombatPanelViewModel : PanelViewModelBase
     [ObservableProperty]
     private string _enemyInfo = "";
 
-    public CombatPanelViewModel(UiEventBus eventBus, IGameCommands commands)
-        : base(eventBus, commands)
+    public CombatPanelViewModel(IUiStateStore store, IGameCommands commands)
+        : base(store, commands)
     {
-        IsVisible = false; // Hidden by default
     }
 
-    public override void OnEvent(IUiEvent evt)
+    protected override void OnStateChanged(UiState state)
     {
-        switch (evt)
+        IsVisible = state.Mode == GameState.InCombat;
+
+        if (IsVisible && state.EnemyName != null)
         {
-            case ModeChangedEvent mode:
-                IsVisible = mode.NewMode == GameState.InCombat;
-                break;
-            case StatsChangedEvent stats when IsVisible:
-                UpdateEnemyInfo(stats.CurrentEnemy);
-                break;
+            EnemyInfo = $"【{state.EnemyName}】\n" +
+                       $"HP: {state.EnemyCurrentHp}/{state.EnemyMaxHp}\n" +
+                       $"攻撃力: {state.EnemyAttack}\n" +
+                       $"防御力: {state.EnemyDefense}";
         }
-    }
-
-    private void UpdateEnemyInfo(Enemy? enemy)
-    {
-        if (enemy == null)
+        else
         {
             EnemyInfo = "";
-            return;
         }
-
-        EnemyInfo = $"【{enemy.Name}】\n" +
-                   $"HP: {enemy.CurrentHp}/{enemy.MaxHp}\n" +
-                   $"攻撃力: {enemy.Attack}\n" +
-                   $"防御力: {enemy.Defense}";
     }
 }

@@ -62,12 +62,20 @@
 ### Game.App（UI層）
 Avalonia UIを使用したプレゼンテーション層。
 
+#### 状態管理
+- **UiState.cs**: UI向け immutable record（GameSession の射影）
+- **IUiStateStore.cs / UiStateStore.cs**: 単一状態ストア（record equality で差分検知・通知）
+
 #### ViewModels
 - **MainWindowViewModel.cs**: メインウィンドウのビューモデル
-  - Observable Properties: UIバインディング用のプロパティ
-  - Relay Commands: ボタンアクション
-  - GameManagerとの連携
-  - UI状態管理
+  - GameEngine を Tick し、`SyncUiState()` で UiStateStore を更新
+  - IGameCommands 実装（StartGame, UsePotion, LaunchExpedition）
+- **UiShellViewModel.cs**: パネルレイアウト管理（Left/Right スロット）
+
+#### Panels
+- **PanelViewModelBase.cs**: パネル VM 基底クラス（UiStateStore 購読・自動破棄）
+- **5 パネル VM**: MainMenu, PlayerInfo, Combat, Base, GameLog
+  - 各パネルは `OnStateChanged(UiState)` で可視性・表示内容を更新
 
 #### Views
 - **MainWindow.axaml**: メインウィンドウのUI定義
@@ -82,13 +90,13 @@ User Input (Button Click)
     ↓
 View (MainWindow.axaml)
     ↓
-Command Binding
+Command Binding (IGameCommands)
     ↓
-ViewModel (MainWindowViewModel)
+MainWindowViewModel → GameEngine.Tick()
     ↓
-Business Logic (GameManager)
-    ↓
-Model Update (Player, Enemy)
+SyncUiState() → UiStateStore.Update(UiState)
+    ↓  (record equality で差分検知)
+PanelViewModelBase.OnStateChanged(UiState)
     ↓
 Observable Property Changed
     ↓

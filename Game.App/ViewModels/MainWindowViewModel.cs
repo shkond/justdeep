@@ -13,46 +13,29 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
     private readonly GameEngine _engine;
     private readonly DispatcherTimer _tickTimer;
     private readonly Stopwatch _stopwatch;
+    private readonly UiStateStore _store;
 
     /// <summary>The UI Shell that manages panel layout.</summary>
     public UiShellViewModel Shell { get; }
 
-    // ── Diff detection state (previous frame values) ──
-    private GameState _lastModeId;
-    private int _lastLogCount;
-    private int _lastHp;
-    private int _lastAttack;
-    private int _lastDefense;
-    private int _lastLevel;
-    private int _lastExp;
-    private int _lastGold;
-    private int _lastFloor;
-    private int _lastRooms;
-    private int _lastEnemyHp;
-
     public MainWindowViewModel()
     {
         _engine = new GameEngine();
+        _store = new UiStateStore();
+        Shell = new UiShellViewModel();
 
-        var eventBus = new UiEventBus();
-        Shell = new UiShellViewModel(eventBus);
-
-        // Create panels and register them in slots
-        var mainMenu = new MainMenuPanelViewModel(eventBus, this);
-        var playerInfo = new PlayerInfoPanelViewModel(eventBus, this) { IsVisible = false };
-        var combat = new CombatPanelViewModel(eventBus, this);
-        var basePanel = new BasePanelViewModel(eventBus, this);
-        var gameLog = new GameLogPanelViewModel(eventBus, this);
+        // Create panels — all subscribe to the store
+        var mainMenu = new MainMenuPanelViewModel(_store, this);
+        var playerInfo = new PlayerInfoPanelViewModel(_store, this);
+        var combat = new CombatPanelViewModel(_store, this);
+        var basePanel = new BasePanelViewModel(_store, this);
+        var gameLog = new GameLogPanelViewModel(_store, this);
 
         Shell.AddPanel(mainMenu, "Left");
         Shell.AddPanel(playerInfo, "Left");
         Shell.AddPanel(combat, "Left");
         Shell.AddPanel(basePanel, "Left");
         Shell.AddPanel(gameLog, "Right");
-
-        // Initialize diff state
-        _lastModeId = _engine.Session.CurrentStateId;
-        _lastLogCount = _engine.Session.GameLog.Count;
 
         _stopwatch = new Stopwatch();
 
@@ -75,28 +58,23 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
         _stopwatch.Restart();
         _tickTimer.Start();
 
-        // Fire initial events: mode change from MainMenu → InDungeon
-        var bus = Shell.EventBus;
-        bus.Publish(new ModeChangedEvent(GameState.MainMenu, _engine.Session.CurrentStateId));
-        SyncDiffState();
-        PublishStatsAndFloor();
-        PublishLogDiff();
+        SyncUiState();
     }
 
     public void UsePotion()
     {
         _engine.UsePotion();
-        // Stats and log will be diff-detected on next tick
+        // State change will be picked up on next tick via SyncUiState
     }
 
     public void LaunchExpedition()
     {
         _engine.LaunchExpedition();
-        // Mode change will be diff-detected on next tick
+        // State change will be picked up on next tick via SyncUiState
     }
 
     // ══════════════════════════════════════════════
-    //  Tick loop — diff detection → event publishing
+    //  Tick loop — sync state to store
     // ══════════════════════════════════════════════
 
     private void OnTick(object? sender, EventArgs e)
@@ -106,7 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
 
         _engine.Tick(dt);
 
-        PublishDiffEvents();
+        SyncUiState();
 
         // Handle terminal states
         if (_engine.Session.CurrentStateId == GameState.GameOver)
@@ -117,87 +95,34 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
     }
 
     /// <summary>
-    /// Compare current state to previous frame, publish only changed events.
+    /// Project the current GameSession into UiState and push to store.
+    /// The store's record-equality check ensures subscribers are only
+    /// notified when something actually changed (no manual diff fields needed).
     /// </summary>
-    private void PublishDiffEvents()
+    private void SyncUiState()
     {
-        var bus = Shell.EventBus;
-        var session = _engine.Session;
-        var player = session.Player;
+        var s = _engine.Session;
+        var p = s.Player;
+        var e = s.CurrentEnemy;
 
-        // Mode changed?
-        if (session.CurrentStateId != _lastModeId)
-        {
-            var oldMode = _lastModeId;
-            _lastModeId = session.CurrentStateId;
-            bus.Publish(new ModeChangedEvent(oldMode, session.CurrentStateId));
-        }
-
-        // Stats changed?
-        bool statsChanged = player.CurrentHp != _lastHp
-                         || player.Attack != _lastAttack
-                         || player.Defense != _lastDefense
-                         || player.Level != _lastLevel
-                         || player.Experience != _lastExp
-                         || player.Gold != _lastGold;
-
-        bool enemyChanged = (session.CurrentEnemy?.CurrentHp ?? -1) != _lastEnemyHp;
-
-        if (statsChanged || enemyChanged)
-        {
-            bus.Publish(new StatsChangedEvent(player, session.CurrentEnemy));
-            _lastHp = player.CurrentHp;
-            _lastAttack = player.Attack;
-            _lastDefense = player.Defense;
-            _lastLevel = player.Level;
-            _lastExp = player.Experience;
-            _lastGold = player.Gold;
-            _lastEnemyHp = session.CurrentEnemy?.CurrentHp ?? -1;
-        }
-
-        // Floor/rooms changed?
-        if (session.CurrentFloor != _lastFloor || session.RoomsExplored != _lastRooms)
-        {
-            bus.Publish(new FloorChangedEvent(session.CurrentFloor, session.RoomsExplored));
-            _lastFloor = session.CurrentFloor;
-            _lastRooms = session.RoomsExplored;
-        }
-
-        // Log entries added?
-        PublishLogDiff();
-    }
-
-    private void PublishLogDiff()
-    {
-        var session = _engine.Session;
-        if (session.GameLog.Count != _lastLogCount)
-        {
-            Shell.EventBus.Publish(new LogAddedEvent(session.GameLog));
-            _lastLogCount = session.GameLog.Count;
-        }
-    }
-
-    private void PublishStatsAndFloor()
-    {
-        var session = _engine.Session;
-        var player = session.Player;
-        Shell.EventBus.Publish(new StatsChangedEvent(player, session.CurrentEnemy));
-        Shell.EventBus.Publish(new FloorChangedEvent(session.CurrentFloor, session.RoomsExplored));
-    }
-
-    private void SyncDiffState()
-    {
-        var session = _engine.Session;
-        var player = session.Player;
-        _lastModeId = session.CurrentStateId;
-        _lastHp = player.CurrentHp;
-        _lastAttack = player.Attack;
-        _lastDefense = player.Defense;
-        _lastLevel = player.Level;
-        _lastExp = player.Experience;
-        _lastGold = player.Gold;
-        _lastFloor = session.CurrentFloor;
-        _lastRooms = session.RoomsExplored;
-        _lastEnemyHp = session.CurrentEnemy?.CurrentHp ?? -1;
+        _store.Update(new UiState(
+            Mode: s.CurrentStateId,
+            PlayerName: p.Name,
+            Level: p.Level,
+            CurrentHp: p.CurrentHp,
+            MaxHp: p.MaxHp,
+            Attack: p.Attack,
+            Defense: p.Defense,
+            Experience: p.Experience,
+            Gold: p.Gold,
+            CurrentFloor: s.CurrentFloor,
+            RoomsExplored: s.RoomsExplored,
+            EnemyName: e?.Name,
+            EnemyCurrentHp: e?.CurrentHp,
+            EnemyMaxHp: e?.MaxHp,
+            EnemyAttack: e?.Attack,
+            EnemyDefense: e?.Defense,
+            GameLog: s.GameLog
+        ));
     }
 }

@@ -5,7 +5,7 @@ namespace Game.App.Panels;
 
 /// <summary>
 /// Displays player stats and current location info.
-/// Reacts to StatsChangedEvent and FloorChangedEvent only.
+/// Visible when game is active (not MainMenu or GameOver).
 /// </summary>
 public partial class PlayerInfoPanelViewModel : PanelViewModelBase
 {
@@ -18,47 +18,26 @@ public partial class PlayerInfoPanelViewModel : PanelViewModelBase
     [ObservableProperty]
     private string _gameStatus = "";
 
-    public PlayerInfoPanelViewModel(UiEventBus eventBus, IGameCommands commands)
-        : base(eventBus, commands) { }
+    public PlayerInfoPanelViewModel(IUiStateStore store, IGameCommands commands)
+        : base(store, commands) { }
 
-    public override void OnEvent(IUiEvent evt)
+    protected override void OnStateChanged(UiState state)
     {
-        switch (evt)
-        {
-            case StatsChangedEvent stats:
-                UpdatePlayerStats(stats.Player);
-                break;
-            case FloorChangedEvent floor:
-                UpdateFloorStatus(floor);
-                break;
-            case ModeChangedEvent mode:
-                UpdateModeStatus(mode);
-                break;
-        }
-    }
+        IsVisible = state.Mode != GameState.MainMenu
+                 && state.Mode != GameState.GameOver;
 
-    private void UpdatePlayerStats(Player player)
-    {
-        PlayerStats = $"【{player.Name}】\n" +
-                     $"レベル: {player.Level}\n" +
-                     $"HP: {player.CurrentHp}/{player.MaxHp}\n" +
-                     $"攻撃力: {player.Attack}\n" +
-                     $"防御力: {player.Defense}\n" +
-                     $"経験値: {player.Experience}/{player.Level * 100}\n" +
-                     $"ゴールド: {player.Gold}";
-    }
+        if (!IsVisible) return;
 
-    private void UpdateFloorStatus(FloorChangedEvent floor)
-    {
-        GameStatus = $"現在地: ダンジョン {floor.NewFloor}階\n" +
-                    $"探索した部屋: {floor.RoomsExplored}/5";
-    }
+        PlayerStats = $"【{state.PlayerName}】\n" +
+                     $"レベル: {state.Level}\n" +
+                     $"HP: {state.CurrentHp}/{state.MaxHp}\n" +
+                     $"攻撃力: {state.Attack}\n" +
+                     $"防御力: {state.Defense}\n" +
+                     $"経験値: {state.Experience}/{state.Level * 100}\n" +
+                     $"ゴールド: {state.Gold}";
 
-    private void UpdateModeStatus(ModeChangedEvent mode)
-    {
-        if (mode.NewMode == GameState.InBase)
-        {
-            GameStatus = "現在地: 拠点";
-        }
+        GameStatus = state.Mode == GameState.InBase
+            ? "現在地: 拠点"
+            : $"現在地: ダンジョン {state.CurrentFloor}階\n探索した部屋: {state.RoomsExplored}/5";
     }
 }

@@ -2,6 +2,7 @@ namespace Game.App.Panels;
 
 /// <summary>
 /// Contract for all dockable panel ViewModels.
+/// No longer carries event-handling responsibility.
 /// </summary>
 public interface IPanelViewModel
 {
@@ -13,7 +14,4 @@ public interface IPanelViewModel
 
     /// <summary>Whether this panel is currently visible.</summary>
     bool IsVisible { get; set; }
-
-    /// <summary>Handle a UI event (differential, not per-tick).</summary>
-    void OnEvent(IUiEvent evt);
 }

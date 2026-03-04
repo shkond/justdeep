@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
 using Game.App.ViewModels;
 
 namespace Game.App.Panels;
@@ -7,21 +6,15 @@ namespace Game.App.Panels;
 /// <summary>
 /// UI Shell — manages which panels are displayed in which slots.
 /// The only layout concern; panels themselves have no knowledge of layout.
+/// No longer holds EventBus — panels subscribe to UiStateStore directly.
 /// </summary>
 public partial class UiShellViewModel : ViewModelBase
 {
-    public UiEventBus EventBus { get; }
-
     /// <summary>Panels displayed in the left slot.</summary>
     public ObservableCollection<IPanelViewModel> LeftPanels { get; } = [];
 
     /// <summary>Panels displayed in the right slot.</summary>
     public ObservableCollection<IPanelViewModel> RightPanels { get; } = [];
-
-    public UiShellViewModel(UiEventBus eventBus)
-    {
-        EventBus = eventBus;
-    }
 
     /// <summary>Add a panel to a named slot ("Left" or "Right").</summary>
     public void AddPanel(IPanelViewModel panel, string slot)

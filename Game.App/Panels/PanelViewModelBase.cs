@@ -4,8 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Game.App.Panels;
 
 /// <summary>
-/// Base class for panel ViewModels. Automatically subscribes to UiEventBus
-/// and routes events to the abstract OnEvent method.
+/// Base class for panel ViewModels. Automatically subscribes to UiStateStore
+/// and routes state changes to the abstract OnStateChanged method.
 /// Dispose to unsubscribe.
 /// </summary>
 public abstract partial class PanelViewModelBase : ObservableObject, IPanelViewModel, IDisposable
@@ -20,13 +20,17 @@ public abstract partial class PanelViewModelBase : ObservableObject, IPanelViewM
 
     protected IGameCommands Commands { get; }
 
-    protected PanelViewModelBase(UiEventBus eventBus, IGameCommands commands)
+    protected PanelViewModelBase(IUiStateStore store, IGameCommands commands)
     {
         Commands = commands;
-        _subscription = eventBus.Subscribe(OnEvent);
+        _subscription = store.Subscribe(OnStateChanged);
     }
 
-    public abstract void OnEvent(IUiEvent evt);
+    /// <summary>
+    /// Called when UI state changes. Implementations update their
+    /// observable properties and visibility from the new state.
+    /// </summary>
+    protected abstract void OnStateChanged(UiState state);
 
     public void Dispose()
     {

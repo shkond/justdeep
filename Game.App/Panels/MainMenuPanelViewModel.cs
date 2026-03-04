@@ -5,9 +5,8 @@ using Game.Core;
 namespace Game.App.Panels;
 
 /// <summary>
-/// Main menu panel — visible before game start.
+/// Main menu panel — visible before game start and on game over.
 /// Handles player name input and game start command.
-/// Reacts to ModeChangedEvent for visibility.
 /// </summary>
 public partial class MainMenuPanelViewModel : PanelViewModelBase
 {
@@ -17,20 +16,15 @@ public partial class MainMenuPanelViewModel : PanelViewModelBase
     [ObservableProperty]
     private string _playerName = "冒険者";
 
-    public MainMenuPanelViewModel(UiEventBus eventBus, IGameCommands commands)
-        : base(eventBus, commands)
+    public MainMenuPanelViewModel(IUiStateStore store, IGameCommands commands)
+        : base(store, commands)
     {
-        IsVisible = true; // Visible by default
     }
 
-    public override void OnEvent(IUiEvent evt)
+    protected override void OnStateChanged(UiState state)
     {
-        if (evt is ModeChangedEvent mode)
-        {
-            // Show only when transitioning to MainMenu or GameOver
-            IsVisible = mode.NewMode == GameState.MainMenu
-                     || mode.NewMode == GameState.GameOver;
-        }
+        IsVisible = state.Mode == GameState.MainMenu
+                 || state.Mode == GameState.GameOver;
     }
 
     [RelayCommand]

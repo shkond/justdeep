@@ -7,7 +7,6 @@ namespace Game.App.Panels;
 /// <summary>
 /// Base (拠点) panel — visible only during InBase mode.
 /// Shows HP recovery progress and re-expedition button.
-/// Reacts to ModeChangedEvent for visibility, StatsChangedEvent for HP progress.
 /// </summary>
 public partial class BasePanelViewModel : PanelViewModelBase
 {
@@ -23,33 +22,24 @@ public partial class BasePanelViewModel : PanelViewModelBase
     [ObservableProperty]
     private bool _canLaunchExpedition;
 
-    public BasePanelViewModel(UiEventBus eventBus, IGameCommands commands)
-        : base(eventBus, commands)
+    public BasePanelViewModel(IUiStateStore store, IGameCommands commands)
+        : base(store, commands)
     {
-        IsVisible = false; // Hidden by default
     }
 
-    public override void OnEvent(IUiEvent evt)
+    protected override void OnStateChanged(UiState state)
     {
-        switch (evt)
+        IsVisible = state.Mode == GameState.InBase;
+
+        if (IsVisible)
         {
-            case ModeChangedEvent mode:
-                IsVisible = mode.NewMode == GameState.InBase;
-                break;
-            case StatsChangedEvent stats when IsVisible:
-                UpdateRecoveryStatus(stats.Player);
-                break;
+            HpPercent = state.MaxHp > 0
+                ? (double)state.CurrentHp / state.MaxHp * 100 : 100;
+            CanLaunchExpedition = state.CurrentHp >= state.MaxHp;
+            BaseStatusText = state.CurrentHp >= state.MaxHp
+                ? "HP全回復！ 遠征の準備が整った。"
+                : $"休息中… HP: {state.CurrentHp}/{state.MaxHp}";
         }
-    }
-
-    private void UpdateRecoveryStatus(Player player)
-    {
-        HpPercent = player.MaxHp > 0 ? (double)player.CurrentHp / player.MaxHp * 100 : 100;
-        CanLaunchExpedition = player.CurrentHp >= player.MaxHp;
-
-        BaseStatusText = player.CurrentHp >= player.MaxHp
-            ? "HP全回復！ 遠征の準備が整った。"
-            : $"休息中… HP: {player.CurrentHp}/{player.MaxHp}";
     }
 
     [RelayCommand]
