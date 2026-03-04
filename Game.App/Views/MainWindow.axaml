@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Game.App.ViewModels"
+        xmlns:panels="using:Game.App.Panels.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
@@ -14,104 +15,7 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,*">
-        
-        <!-- タイトル -->
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
-                   Text="テキストベース ダンジョンRPG" 
-                   FontSize="24" FontWeight="Bold"
-                   HorizontalAlignment="Center" Margin="0,0,0,20"/>
-
-        <!-- 左パネル: プレイヤー情報とアクション -->
-        <Border Grid.Row="1" Grid.Column="0" 
-                BorderBrush="Gray" BorderThickness="1" 
-                Padding="10" Margin="0,0,10,0">
-            <StackPanel Spacing="10">
-                
-                <!-- メインメニュー -->
-                <StackPanel IsVisible="{Binding IsMainMenu}" Spacing="10">
-                    <TextBlock Text="新しい冒険を始める" FontSize="18" FontWeight="Bold"/>
-                    <TextBlock Text="プレイヤー名:"/>
-                    <TextBox Text="{Binding PlayerName}" Width="200" HorizontalAlignment="Left"/>
-                    <Button Content="ゲーム開始（自動探索）" Command="{Binding StartGameCommand}" 
-                            Width="200" HorizontalAlignment="Left"/>
-                </StackPanel>
-
-                <!-- プレイヤー情報 -->
-                <StackPanel IsVisible="{Binding !IsMainMenu}" Spacing="10">
-                    <TextBlock Text="プレイヤー情報" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding PlayerStats}" 
-                               FontFamily="Courier New" 
-                               Background="#F0F0F0" 
-                               Padding="10"/>
-
-                    <TextBlock Text="{Binding GameStatus}" 
-                               FontFamily="Courier New"
-                               Background="#E0E0FF"
-                               Padding="10"/>
-
-                    <!-- 敵情報（戦闘中のみ） -->
-                    <StackPanel IsVisible="{Binding IsInCombat}" Spacing="5">
-                        <TextBlock Text="敵情報" FontSize="16" FontWeight="Bold"/>
-                        <TextBlock Text="{Binding EnemyInfo}" 
-                                   FontFamily="Courier New"
-                                   Background="#FFE0E0"
-                                   Padding="10"/>
-                    </StackPanel>
-
-                    <!-- 拠点パネル（InBase中のみ） -->
-                    <StackPanel IsVisible="{Binding IsInBase}" Spacing="8">
-                        <TextBlock Text="── 拠点 ──" FontSize="16" FontWeight="Bold"
-                                   Foreground="#2E7D32"/>
-
-                        <!-- HP回復プログレスバー -->
-                        <TextBlock Text="HP 回復状況" FontSize="13" Margin="0,4,0,0"/>
-                        <ProgressBar Minimum="0" Maximum="100" 
-                                     Value="{Binding HpPercent}"
-                                     Height="20"
-                                     Foreground="#4CAF50"
-                                     Background="#E0E0E0"/>
-
-                        <TextBlock Text="{Binding BaseStatusText}" 
-                                   FontFamily="Courier New"
-                                   Background="#E8F5E9"
-                                   Padding="10"
-                                   FontSize="13"/>
-
-                        <!-- 再遠征ボタン -->
-                        <Button Content="再遠征する" 
-                                Command="{Binding LaunchExpeditionCommand}"
-                                IsEnabled="{Binding CanLaunchExpedition}"
-                                Width="200" HorizontalAlignment="Left"
-                                FontSize="14" FontWeight="Bold"/>
-                    </StackPanel>
-
-                    <!-- ポーション（いつでも使用可能） -->
-                    <StackPanel Spacing="5" IsVisible="{Binding !IsInBase}">
-                        <TextBlock Text="アイテム" FontSize="16" FontWeight="Bold"/>
-                        <Button Content="ポーション使用（30ゴールド）" Command="{Binding UsePotionCommand}" 
-                                Width="200" HorizontalAlignment="Left"/>
-                    </StackPanel>
-                </StackPanel>
-            </StackPanel>
-        </Border>
-
-        <!-- 右パネル: ゲームログ -->
-        <Border Grid.Row="1" Grid.Column="1" 
-                BorderBrush="Gray" BorderThickness="1" 
-                Padding="10">
-            <StackPanel>
-                <TextBlock Text="ゲームログ" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
-                <ScrollViewer Height="450" VerticalScrollBarVisibility="Auto">
-                    <TextBlock Text="{Binding ActionLog}" 
-                               FontFamily="Courier New"
-                               TextWrapping="Wrap"
-                               Background="#F5F5F5"
-                               Padding="10"/>
-                </ScrollViewer>
-            </StackPanel>
-        </Border>
-
-    </Grid>
+    <!-- All UI is now delegated to UiShellView -->
+    <panels:UiShellView DataContext="{Binding Shell}" />
 
 </Window>

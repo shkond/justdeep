@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.UiShellView"
+             x:DataType="panels:UiShellViewModel">
+
+    <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,*">
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+                   Text="テキストベース ダンジョンRPG" 
+                   FontSize="24" FontWeight="Bold"
+                   HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+        <!-- Left Panel Slot -->
+        <Border Grid.Row="1" Grid.Column="0" 
+                BorderBrush="Gray" BorderThickness="1" 
+                Padding="10" Margin="0,0,10,0">
+            <ItemsControl ItemsSource="{Binding LeftPanels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- Right Panel Slot -->
+        <Border Grid.Row="1" Grid.Column="1" 
+                BorderBrush="Gray" BorderThickness="1" 
+                Padding="10">
+            <ItemsControl ItemsSource="{Binding RightPanels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+    </Grid>
+
+</UserControl>

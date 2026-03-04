@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.PlayerInfoPanel"
+             x:DataType="panels:PlayerInfoPanelViewModel">
+
+    <StackPanel Spacing="10" IsVisible="{Binding IsVisible}">
+        <TextBlock Text="プレイヤー情報" FontSize="16" FontWeight="Bold"/>
+        <TextBlock Text="{Binding PlayerStats}" 
+                   FontFamily="Courier New" 
+                   Background="#F0F0F0" 
+                   Padding="10"/>
+        <TextBlock Text="{Binding GameStatus}" 
+                   FontFamily="Courier New"
+                   Background="#E0E0FF"
+                   Padding="10"/>
+    </StackPanel>
+
+</UserControl>

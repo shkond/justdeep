@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.GameLogPanel"
+             x:DataType="panels:GameLogPanelViewModel">
+
+    <StackPanel IsVisible="{Binding IsVisible}">
+        <TextBlock Text="ゲームログ" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+        <ScrollViewer Height="450" VerticalScrollBarVisibility="Auto">
+            <TextBlock Text="{Binding ActionLog}" 
+                       FontFamily="Courier New"
+                       TextWrapping="Wrap"
+                       Background="#F5F5F5"
+                       Padding="10"/>
+        </ScrollViewer>
+    </StackPanel>
+
+</UserControl>

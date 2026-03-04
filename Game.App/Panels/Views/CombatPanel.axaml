@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.CombatPanel"
+             x:DataType="panels:CombatPanelViewModel">
+
+    <StackPanel Spacing="5" IsVisible="{Binding IsVisible}">
+        <TextBlock Text="敵情報" FontSize="16" FontWeight="Bold"/>
+        <TextBlock Text="{Binding EnemyInfo}" 
+                   FontFamily="Courier New"
+                   Background="#FFE0E0"
+                   Padding="10"/>
+    </StackPanel>
+
+</UserControl>

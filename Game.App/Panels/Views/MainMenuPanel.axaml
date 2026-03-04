@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.MainMenuPanel"
+             x:DataType="panels:MainMenuPanelViewModel">
+
+    <StackPanel Spacing="10" IsVisible="{Binding IsVisible}">
+        <TextBlock Text="新しい冒険を始める" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Text="プレイヤー名:"/>
+        <TextBox Text="{Binding PlayerName}" Width="200" HorizontalAlignment="Left"/>
+        <Button Content="ゲーム開始（自動探索）" Command="{Binding StartGameCommand}" 
+                Width="200" HorizontalAlignment="Left"/>
+    </StackPanel>
+
+</UserControl>

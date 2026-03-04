@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:Game.App.Panels"
+             x:Class="Game.App.Panels.Views.BasePanel"
+             x:DataType="panels:BasePanelViewModel">
+
+    <StackPanel Spacing="8" IsVisible="{Binding IsVisible}">
+        <TextBlock Text="── 拠点 ──" FontSize="16" FontWeight="Bold"
+                   Foreground="#2E7D32"/>
+
+        <!-- HP Recovery Progress Bar -->
+        <TextBlock Text="HP 回復状況" FontSize="13" Margin="0,4,0,0"/>
+        <ProgressBar Minimum="0" Maximum="100" 
+                     Value="{Binding HpPercent}"
+                     Height="20"
+                     Foreground="#4CAF50"
+                     Background="#E0E0E0"/>
+
+        <TextBlock Text="{Binding BaseStatusText}" 
+                   FontFamily="Courier New"
+                   Background="#E8F5E9"
+                   Padding="10"
+                   FontSize="13"/>
+
+        <!-- Re-expedition Button -->
+        <Button Content="再遠征する" 
+                Command="{Binding LaunchExpeditionCommand}"
+                IsEnabled="{Binding CanLaunchExpedition}"
+                Width="200" HorizontalAlignment="Left"
+                FontSize="14" FontWeight="Bold"/>
+    </StackPanel>
+
+</UserControl>
