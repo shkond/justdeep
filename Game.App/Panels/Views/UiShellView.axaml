@@ -4,39 +4,81 @@
              x:Class="Game.App.Panels.Views.UiShellView"
              x:DataType="panels:UiShellViewModel">
 
-    <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,*">
+    <Grid Margin="20" RowDefinitions="Auto,*">
 
         <!-- Title -->
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+        <TextBlock Grid.Row="0"
                    Text="テキストベース ダンジョンRPG" 
                    FontSize="24" FontWeight="Bold"
                    HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
-        <!-- Left Panel Slot -->
-        <Border Grid.Row="1" Grid.Column="0" 
-                BorderBrush="Gray" BorderThickness="1" 
-                Padding="10" Margin="0,0,10,0">
-            <ItemsControl ItemsSource="{Binding LeftPanels}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+        <!-- Main content: Nav | (Workspace / Bottom) -->
+        <Grid Grid.Row="1" ColumnDefinitions="220,*">
 
-        <!-- Right Panel Slot -->
-        <Border Grid.Row="1" Grid.Column="1" 
-                BorderBrush="Gray" BorderThickness="1" 
-                Padding="10">
-            <ItemsControl ItemsSource="{Binding RightPanels}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+            <!-- Nav Slot (left, fixed width) -->
+            <Border Grid.Column="0"
+                    BorderBrush="Gray" BorderThickness="1" 
+                    Padding="10" Margin="0,0,10,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding NavPanels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Center area: Workspace + Bottom -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto">
+
+                <!-- Workspace Slot (center, fills available space) -->
+                <Border Grid.Row="0"
+                        BorderBrush="Gray" BorderThickness="1" 
+                        Padding="10" Margin="0,0,0,5">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding WorkspacePanels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Bottom Toggle Button -->
+                <Button Grid.Row="1"
+                        Command="{Binding ToggleBottomCommand}"
+                        Content="{Binding IsBottomExpanded, 
+                            Converter={x:Static panels:BoolToChevronConverter.Instance}}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Padding="4,2"
+                        FontSize="12"
+                        Margin="0,0,0,2"/>
+
+                <!-- Bottom Slot (collapsible log area) -->
+                <Border Grid.Row="2"
+                        BorderBrush="Gray" BorderThickness="1" 
+                        Padding="10"
+                        Height="150"
+                        IsVisible="{Binding IsBottomExpanded}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding BottomPanels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding}" Margin="0,0,0,10"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+            </Grid>
+
+        </Grid>
 
     </Grid>
 

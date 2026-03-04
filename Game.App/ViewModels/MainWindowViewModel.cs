@@ -31,11 +31,11 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
         var basePanel = new BasePanelViewModel(_store, this);
         var gameLog = new GameLogPanelViewModel(_store, this);
 
-        Shell.AddPanel(mainMenu, "Left");
-        Shell.AddPanel(playerInfo, "Left");
-        Shell.AddPanel(combat, "Left");
-        Shell.AddPanel(basePanel, "Left");
-        Shell.AddPanel(gameLog, "Right");
+        Shell.AddPanel(playerInfo, "Nav");
+        Shell.AddPanel(mainMenu, "Workspace");
+        Shell.AddPanel(combat, "Workspace");
+        Shell.AddPanel(basePanel, "Workspace");
+        Shell.AddPanel(gameLog, "Bottom");
 
         _stopwatch = new Stopwatch();
 

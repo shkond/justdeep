@@ -70,11 +70,12 @@ Avalonia UIを使用したプレゼンテーション層。
 - **MainWindowViewModel.cs**: メインウィンドウのビューモデル
   - GameEngine を Tick し、`SyncUiState()` で UiStateStore を更新
   - IGameCommands 実装（StartGame, UsePotion, LaunchExpedition）
-- **UiShellViewModel.cs**: パネルレイアウト管理（Left/Right スロット）
+- **UiShellViewModel.cs**: パネルレイアウト管理（Nav/Workspace/Bottom 3ゾーン）
 
 #### Panels
 - **PanelViewModelBase.cs**: パネル VM 基底クラス（UiStateStore 購読・自動破棄）
 - **5 パネル VM**: MainMenu, PlayerInfo, Combat, Base, GameLog
+  - Nav: PlayerInfo / Workspace: MainMenu, Combat, Base / Bottom: GameLog
   - 各パネルは `OnStateChanged(UiState)` で可視性・表示内容を更新
 
 #### Views
