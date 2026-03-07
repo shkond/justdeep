@@ -334,7 +334,7 @@ public class InventorySystemTests
     [Fact]
     public void GameSession_HasDefaultPlayerAndStashContainers()
     {
-        var session = new GameSession(new Player("Hero"));
+        var session = new GameSession(new Party([new Player("Hero")]));
 
         Assert.True(session.Inventories.ContainsKey(InventoryKind.Player));
         Assert.True(session.Inventories.ContainsKey(InventoryKind.Stash));
@@ -351,7 +351,7 @@ public class InventorySystemTests
     public void GameSession_Snapshot_RestoresInventories()
     {
         var registry = CreateRegistry();
-        var session = new GameSession(new Player("Hero"));
+        var session = new GameSession(new Party([new Player("Hero")]));
 
         // Add items to player inventory
         var playerInv = session.Inventories[InventoryKind.Player];
@@ -386,12 +386,12 @@ public class InventorySystemTests
     public void GameSession_Snapshot_PreservesCarryCapacity()
     {
         var player = new Player("Hero") { CarryCapacity = 75.0 };
-        var session = new GameSession(player);
+        var session = new GameSession(new Party([player]));
 
         var snapshot = session.ToSnapshot();
         var restored = GameSession.FromSnapshot(snapshot);
 
-        Assert.Equal(75.0, restored.Player.CarryCapacity);
+        Assert.Equal(75.0, restored.Party.Members[0].CarryCapacity);
     }
 
     // ══════════════════════════════════════════════

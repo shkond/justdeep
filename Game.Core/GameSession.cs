@@ -10,7 +10,7 @@ namespace Game.Core;
 /// </summary>
 public class GameSession
 {
-    public Player Player { get; set; }
+    public Party Party { get; set; }
 
     public int CurrentFloor { get; set; }
     public int RoomsExplored { get; set; }
@@ -26,16 +26,17 @@ public class GameSession
     /// </summary>
     public Dictionary<InventoryKind, InventoryContainer> Inventories { get; set; } = [];
 
-    public GameSession(Player player)
+    public GameSession(Party party)
     {
-        Player = player;
+        Party = party;
         CurrentFloor = 1;
         RoomsExplored = 0;
         CurrentStateId = GameState.MainMenu;
 
         // Default containers
+        var leader = Party.Members[0];
         Inventories[InventoryKind.Player] =
-            InventoryContainer.Create(InventoryKind.Player, player.CarryCapacity);
+            InventoryContainer.Create(InventoryKind.Player, leader.CarryCapacity);
         Inventories[InventoryKind.Stash] =
             InventoryContainer.Create(InventoryKind.Stash); // unlimited
     }
@@ -50,15 +51,19 @@ public class GameSession
     {
         var data = new SessionStateData
         {
-            PlayerName = Player.Name,
-            Level = Player.Level,
-            MaxHp = Player.MaxHp,
-            CurrentHp = Player.CurrentHp,
-            Attack = Player.Attack,
-            Defense = Player.Defense,
-            Experience = Player.Experience,
-            Gold = Player.Gold,
-            CarryCapacity = Player.CarryCapacity,
+            Players = Party.Members.Select(player => new PlayerData
+            {
+                Id = player.Id.ToString(),
+                Name = player.Name,
+                Level = player.Level,
+                MaxHp = player.MaxHp,
+                CurrentHp = player.CurrentHp,
+                Attack = player.Attack,
+                Defense = player.Defense,
+                Experience = player.Experience,
+                Gold = player.Gold,
+                CarryCapacity = player.CarryCapacity,
+            }).ToList(),
 
             CurrentFloor = CurrentFloor,
             RoomsExplored = RoomsExplored,
@@ -90,19 +95,28 @@ public class GameSession
     /// <summary>Restore a GameSession from a DTO snapshot.</summary>
     public static GameSession FromSnapshot(SessionStateData data)
     {
-        var player = new Player(data.PlayerName)
+        if (data.Players.Count == 0)
         {
-            Level = data.Level,
-            MaxHp = data.MaxHp,
-            CurrentHp = data.CurrentHp,
-            Attack = data.Attack,
-            Defense = data.Defense,
-            Experience = data.Experience,
-            Gold = data.Gold,
-            CarryCapacity = data.CarryCapacity,
-        };
+            throw new InvalidOperationException("Invalid session snapshot: no players found.");
+        }
 
-        var session = new GameSession(player)
+        var members = data.Players.Select(p =>
+        {
+            var id = Guid.TryParse(p.Id, out var parsedId) ? parsedId : Guid.NewGuid();
+            return new Player(id, p.Name)
+            {
+                Level = p.Level,
+                MaxHp = p.MaxHp,
+                CurrentHp = p.CurrentHp,
+                Attack = p.Attack,
+                Defense = p.Defense,
+                Experience = p.Experience,
+                Gold = p.Gold,
+                CarryCapacity = p.CarryCapacity,
+            };
+        }).ToList();
+
+        var session = new GameSession(new Party(members))
         {
             CurrentFloor = data.CurrentFloor,
             RoomsExplored = data.RoomsExplored,

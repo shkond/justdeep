@@ -6,10 +6,12 @@ namespace Game.Core.Tests;
 
 public class GameEngineTests
 {
+    private static Player Leader(GameEngine engine) => engine.Session.Party.Members[0];
+
     private GameEngine CreateStartedEngine()
     {
         var engine = new GameEngine();
-        engine.StartNewGame("Hero", seed: 42);
+        engine.StartNewGame(["Hero"], seed: 42);
         return engine;
     }
 
@@ -21,7 +23,8 @@ public class GameEngineTests
         var engine = new GameEngine();
 
         Assert.NotNull(engine.Session);
-        Assert.NotNull(engine.Session.Player);
+        Assert.NotNull(engine.Session.Party);
+        Assert.NotEmpty(engine.Session.Party.Members);
         Assert.Equal(GameState.MainMenu, engine.Session.CurrentStateId);
     }
 
@@ -29,9 +32,9 @@ public class GameEngineTests
     public void StartNewGame_TransitionsToInDungeon()
     {
         var engine = new GameEngine();
-        engine.StartNewGame("Hero", seed: 42);
+        engine.StartNewGame(["Hero"], seed: 42);
 
-        Assert.Equal("Hero", engine.Session.Player.Name);
+        Assert.Equal("Hero", Leader(engine).Name);
         Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
         Assert.IsType<InDungeonMode>(engine.CurrentMode);
         Assert.Equal(1, engine.Session.CurrentFloor);
@@ -146,27 +149,29 @@ public class GameEngineTests
     public void UsePotion_HealsPlayer()
     {
         var engine = CreateStartedEngine();
-        engine.Session.Player.CurrentHp = 50;
-        int hpBefore = engine.Session.Player.CurrentHp;
-        int goldBefore = engine.Session.Player.Gold;
+        var leader = Leader(engine);
+        leader.CurrentHp = 50;
+        int hpBefore = leader.CurrentHp;
+        int goldBefore = leader.Gold;
 
-        engine.UsePotion();
+        engine.UsePotion(leader.Id);
 
-        Assert.True(engine.Session.Player.CurrentHp > hpBefore);
-        Assert.True(engine.Session.Player.Gold < goldBefore);
+        Assert.True(leader.CurrentHp > hpBefore);
+        Assert.True(leader.Gold < goldBefore);
     }
 
     [Fact]
     public void UsePotion_NotEnoughGold_DoesNotHeal()
     {
         var engine = CreateStartedEngine();
-        engine.Session.Player.CurrentHp = 50;
-        engine.Session.Player.Gold = 0;
-        int hpBefore = engine.Session.Player.CurrentHp;
+        var leader = Leader(engine);
+        leader.CurrentHp = 50;
+        leader.Gold = 0;
+        int hpBefore = leader.CurrentHp;
 
-        engine.UsePotion();
+        engine.UsePotion(leader.Id);
 
-        Assert.Equal(hpBefore, engine.Session.Player.CurrentHp);
+        Assert.Equal(hpBefore, leader.CurrentHp);
     }
 
     // ── Mode transitions ──
@@ -189,10 +194,10 @@ public class GameEngineTests
     public void SameSeed_ProducesSameGameSequence()
     {
         var engine1 = new GameEngine();
-        engine1.StartNewGame("Hero", seed: 12345);
+        engine1.StartNewGame(["Hero"], seed: 12345);
 
         var engine2 = new GameEngine();
-        engine2.StartNewGame("Hero", seed: 12345);
+        engine2.StartNewGame(["Hero"], seed: 12345);
 
         // Run 20 ticks — both should have identical logs
         for (int i = 0; i < 20; i++)
@@ -218,10 +223,10 @@ public class GameEngineTests
 
         var save = engine.CreateSaveData();
 
-        Assert.Equal(1, save.SaveFormatVersion);
+        Assert.Equal(2, save.SaveFormatVersion);
         Assert.Equal(42UL, save.RunSeed);
         Assert.Equal(4, save.RngState.Length);
-        Assert.Equal("Hero", save.SessionState.PlayerName);
+        Assert.Equal("Hero", save.SessionState.Players[0].Name);
         Assert.NotNull(save.ModeState);
     }
 
@@ -231,7 +236,7 @@ public class GameEngineTests
     public void InBaseMode_FullRecovery_Within10Seconds()
     {
         var engine = CreateStartedEngine();
-        engine.Session.Player.CurrentHp = 1;
+        Leader(engine).CurrentHp = 1;
         engine.TransitionTo(new InBaseMode());
 
         // Tick 20 times at 0.5s each = 10 seconds
@@ -240,14 +245,14 @@ public class GameEngineTests
             engine.Tick(0.5);
         }
 
-        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+        Assert.Equal(Leader(engine).MaxHp, Leader(engine).CurrentHp);
     }
 
     [Fact]
     public void InBaseMode_DoesNotOverheal()
     {
         var engine = CreateStartedEngine();
-        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp - 1;
+        Leader(engine).CurrentHp = Leader(engine).MaxHp - 1;
         engine.TransitionTo(new InBaseMode());
 
         // Tick until auto-expedition fires or cap out
@@ -258,7 +263,7 @@ public class GameEngineTests
         }
 
         // HP should be exactly MaxHp (not overhealed)
-        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+        Assert.Equal(Leader(engine).MaxHp, Leader(engine).CurrentHp);
     }
 
     // ── LaunchExpedition ──
@@ -302,7 +307,7 @@ public class GameEngineTests
         engine.TransitionTo(new InCombatMode());
 
         // Set player HP to 25% (below 30% threshold)
-        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 25 / 100;
+        Leader(engine).CurrentHp = Leader(engine).MaxHp * 25 / 100;
 
         // Tick enough for combat to resolve (enemy has only 1 HP)
         for (int i = 0; i < 10; i++)
@@ -347,7 +352,7 @@ public class GameEngineTests
         var engine = CreateStartedEngine();
 
         // Set HP to 20% — should trigger retreat on next non-combat room
-        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 20 / 100;
+        Leader(engine).CurrentHp = Leader(engine).MaxHp * 20 / 100;
 
         // Tick until state changes
         for (int i = 0; i < 20; i++)
@@ -368,7 +373,7 @@ public class GameEngineTests
     public void InBase_FullRecovery_AutoLaunchesExpedition()
     {
         var engine = CreateStartedEngine();
-        engine.Session.Player.CurrentHp = 1;
+        Leader(engine).CurrentHp = 1;
         engine.TransitionTo(new InBaseMode());
 
         // Tick enough for full recovery (20 ticks × 0.5s = 10s)
@@ -389,7 +394,7 @@ public class GameEngineTests
         var engine = CreateStartedEngine();
 
         // Set HP low to trigger retreat on next room
-        engine.Session.Player.CurrentHp = engine.Session.Player.MaxHp * 20 / 100;
+        Leader(engine).CurrentHp = Leader(engine).MaxHp * 20 / 100;
 
         // Phase 1: Tick until retreating
         for (int i = 0; i < 50; i++)
@@ -415,6 +420,6 @@ public class GameEngineTests
             if (engine.Session.CurrentStateId == GameState.InDungeon) break;
         }
         Assert.Equal(GameState.InDungeon, engine.Session.CurrentStateId);
-        Assert.Equal(engine.Session.Player.MaxHp, engine.Session.Player.CurrentHp);
+        Assert.Equal(Leader(engine).MaxHp, Leader(engine).CurrentHp);
     }
 }

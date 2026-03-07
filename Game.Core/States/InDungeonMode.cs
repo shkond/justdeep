@@ -42,9 +42,9 @@ public class InDungeonMode : IGameMode
 
         // After room event, check retreat condition (only if we haven't already
         // transitioned to combat — combat handles its own HP checks)
-        if (engine.CurrentMode == this && session.Player.ShouldRetreat)
+        if (engine.CurrentMode == this && session.Party.ShouldRetreat)
         {
-            session.AddToLog($"HP危険！ 撤退を開始する！（HP: {session.Player.CurrentHp}/{session.Player.MaxHp}）");
+            session.AddToLog("HP危険！ 撤退を開始する！");
             engine.TransitionTo(new ReturningMode(session.CurrentFloor));
         }
     }
@@ -107,7 +107,7 @@ public class InDungeonMode : IGameMode
     private void OpenTreasure(GameSession session, GameEngine engine)
     {
         int goldFound = engine.Rng.Next(20, 50) + session.CurrentFloor * 10;
-        session.Player.AddGold(goldFound);
+        session.Party.DistributeGold(goldFound);
         session.AddToLog($"宝箱を発見！ ゴールド {goldFound} を獲得！");
     }
 }

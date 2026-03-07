@@ -31,41 +31,55 @@ public class InCombatMode : IGameMode
 
         TurnCount++;
         _enemy = session.CurrentEnemy;
-        var player = session.Player;
         var enemy = session.CurrentEnemy;
+        var combatants = session.Party.GetCombatants();
 
-        // Player attacks
-        int damage = Math.Max(1, player.Attack - enemy.Defense);
-        damage += engine.Rng.Next(-2, 3);
-        damage = Math.Max(1, damage);
-
-        enemy.TakeDamage(damage);
-        session.AddToLog($"{player.Name}の攻撃！ {enemy.Name}に{damage}ダメージ！");
-
-        if (!enemy.IsAlive)
+        if (combatants.Count == 0)
         {
-            HandleEnemyDefeated(session, engine);
+            session.CurrentStateId = GameState.GameOver;
+            session.AddToLog("パーティは全滅した...");
+            session.CurrentEnemy = null;
+            _enemy = null;
             return;
         }
 
+        // Party attacks
+        foreach (var combatant in combatants)
+        {
+            int damage = Math.Max(1, combatant.Attack - enemy.Defense);
+            damage += engine.Rng.Next(-2, 3);
+            damage = Math.Max(1, damage);
+
+            enemy.TakeDamage(damage);
+            session.AddToLog($"{combatant.Name}の攻撃！ {enemy.Name}に{damage}ダメージ！");
+
+            if (!enemy.IsAlive)
+            {
+                HandleEnemyDefeated(session, engine);
+                return;
+            }
+        }
+
+        var incomingTarget = session.Party.SelectIncomingTarget(engine.Rng);
+
         // Enemy counterattack
-        int enemyDamage = Math.Max(1, enemy.Attack - player.Defense);
+        int enemyDamage = Math.Max(1, enemy.Attack - incomingTarget.Defense);
         enemyDamage += engine.Rng.Next(-2, 3);
         enemyDamage = Math.Max(1, enemyDamage);
 
-        player.TakeDamage(enemyDamage);
-        session.AddToLog($"{enemy.Name}の攻撃！ {player.Name}に{enemyDamage}ダメージ！");
+        incomingTarget.TakeDamage(enemyDamage);
+        session.AddToLog($"{enemy.Name}の攻撃！ {incomingTarget.Name}に{enemyDamage}ダメージ！");
 
-        if (!player.IsAlive)
+        if (session.Party.AllDown)
         {
             session.CurrentStateId = GameState.GameOver;
-            session.AddToLog("冒険者は力尽きた...");
+            session.AddToLog("パーティは力尽きた...");
             session.CurrentEnemy = null;
             _enemy = null;
         }
-        else if (player.ShouldRetreat)
+        else if (session.Party.ShouldRetreat)
         {
-            session.AddToLog($"HP危険！ 戦闘を離脱して撤退を開始する！（HP: {player.CurrentHp}/{player.MaxHp}）");
+            session.AddToLog("HP危険！ 戦闘を離脱して撤退を開始する！");
             session.CurrentEnemy = null;
             _enemy = null;
             engine.TransitionTo(new ReturningMode(session.CurrentFloor));
@@ -91,8 +105,8 @@ public class InCombatMode : IGameMode
         var enemy = session.CurrentEnemy!;
 
         session.AddToLog($"{enemy.Name}を倒した！");
-        session.Player.GainExperience(enemy.ExpReward);
-        session.Player.AddGold(enemy.GoldReward);
+        session.Party.DistributeExperience(enemy.ExpReward);
+        session.Party.DistributeGold(enemy.GoldReward);
         session.AddToLog($"経験値 {enemy.ExpReward} と ゴールド {enemy.GoldReward} を獲得！");
 
         if (session.RoomsExplored % 5 == 0) // Boss defeated
@@ -106,9 +120,9 @@ public class InCombatMode : IGameMode
         _enemy = null;
 
         // Retreat if HP is critical after victory
-        if (session.Player.ShouldRetreat)
+        if (session.Party.ShouldRetreat)
         {
-            session.AddToLog($"HP危険！ 撤退を開始する！（HP: {session.Player.CurrentHp}/{session.Player.MaxHp}）");
+            session.AddToLog("HP危険！ 撤退を開始する！");
             engine.TransitionTo(new ReturningMode(session.CurrentFloor));
         }
         else

@@ -361,7 +361,7 @@ public class ItemSystemTests
     public void GameEngine_StartNewGame_ReInitializesItemRegistry()
     {
         var engine = new GameEngine();
-        engine.StartNewGame("Hero", 42);
+        engine.StartNewGame(["Hero"], 42);
 
         Assert.NotNull(engine.ItemRegistry);
         Assert.NotNull(engine.ItemRegistry.Get("iron_sword"));

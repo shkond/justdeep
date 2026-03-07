@@ -4,6 +4,7 @@ namespace Game.Core;
 
 public class Player
 {
+    public Guid Id { get; }
     public string Name { get; private set; }
     public int MaxHp { get; set; }
     public int CurrentHp { get; set; }
@@ -26,7 +27,13 @@ public class Player
     };
 
     public Player(string name)
+        : this(Guid.NewGuid(), name)
     {
+    }
+
+    public Player(Guid id, string name)
+    {
+        Id = id;
         Name = name;
         Level = 1;
         MaxHp = 100;

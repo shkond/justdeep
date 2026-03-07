@@ -20,7 +20,7 @@ public class GameEngine
     public GameEngine()
     {
         // Initialized to a stub session in MainMenu state
-        Session = new GameSession(new Player("冒険者"));
+        Session = new GameSession(new Party([new Player("冒険者")]));
         Rng = new XoshiroRng(0);
         ItemRegistry = ItemRegistry.CreateDefault();
         CurrentMode = new InDungeonMode(); // Placeholder, not entered yet
@@ -33,18 +33,30 @@ public class GameEngine
     /// <summary>
     /// Start a new game run. Optionally specify a seed for reproducibility.
     /// </summary>
-    public void StartNewGame(string playerName, ulong? seed = null)
+    public void StartNewGame(IEnumerable<string> playerNames, ulong? seed = null)
     {
+        var names = playerNames
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Select(n => n.Trim())
+            .ToList();
+
+        if (names.Count == 0)
+        {
+            throw new ArgumentException("At least one player name is required.", nameof(playerNames));
+        }
+
         RunSeed = seed ?? (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Rng = new XoshiroRng(RunSeed);
         ItemRegistry = ItemRegistry.CreateDefault();
 
-        Session = new GameSession(new Player(playerName))
+        var party = new Party(names.Select(name => new Player(name)));
+
+        Session = new GameSession(party)
         {
             CurrentStateId = GameState.InDungeon
         };
 
-        Session.AddToLog($"{playerName}の冒険が始まった！");
+        Session.AddToLog($"{party.Members[0].Name}の冒険が始まった！");
         Session.AddToLog($"ダンジョン 第{Session.CurrentFloor}階に入った。");
 
         var startMode = new InDungeonMode();
@@ -97,18 +109,25 @@ public class GameEngine
     /// <summary>
     /// Use a potion (player action, available in any active state).
     /// </summary>
-    public void UsePotion()
+    public void UsePotion(Guid playerId)
     {
+        var player = Session.Party.FindById(playerId);
+        if (player is null)
+        {
+            Session.AddToLog("対象の冒険者が見つかりません。ポーション使用に失敗した。");
+            return;
+        }
+
         int potionCost = 30;
-        if (Session.Player.SpendGold(potionCost))
+        if (player.SpendGold(potionCost))
         {
             int healAmount = 50;
-            Session.Player.Heal(healAmount);
-            Session.AddToLog($"ポーションを使用！ HP {healAmount} 回復！（-{potionCost} ゴールド）");
+            player.Heal(healAmount);
+            Session.AddToLog($"{player.Name}はポーションを使用！ HP {healAmount} 回復！（-{potionCost} ゴールド）");
         }
         else
         {
-            Session.AddToLog("ゴールドが足りません！");
+            Session.AddToLog($"{player.Name}のゴールドが足りません！");
         }
     }
 
@@ -134,7 +153,7 @@ public class GameEngine
     {
         return new GameSaveData
         {
-            SaveFormatVersion = 1,
+            SaveFormatVersion = 2,
             RunSeed = RunSeed,
             RngState = Rng.GetState(),
             SessionState = Session.ToSnapshot(),

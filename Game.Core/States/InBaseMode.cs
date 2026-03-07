@@ -21,21 +21,22 @@ public class InBaseMode : IGameMode
     {
         ActionTimer = 0;
         RecoveryTimer = 0;
-        IsFullyRecovered = session.Player.CurrentHp >= session.Player.MaxHp;
+        IsFullyRecovered = session.Party.IsFullyHealed;
         session.AddToLog("拠点に到着。休息を開始する。");
     }
 
     public void ExecuteAction(GameSession session, GameEngine engine)
     {
         RecoveryTimer += ActionInterval;
-        var player = session.Player;
 
-        if (player.CurrentHp < player.MaxHp)
+        if (session.Party.NeedsRecovery)
         {
-            // 10s = 20 ticks of 0.5s → heal MaxHp/20 per tick
-            int healAmount = Math.Max(1, player.MaxHp / 20);
-            player.Heal(healAmount);
-            session.AddToLog($"休息中… HP {healAmount} 回復（HP: {player.CurrentHp}/{player.MaxHp}）");
+            session.Party.ForEachAlive(player =>
+            {
+                int healAmount = Math.Max(1, player.MaxHp / 20);
+                player.Heal(healAmount);
+                session.AddToLog($"休息中… {player.Name} HP {healAmount} 回復（HP: {player.CurrentHp}/{player.MaxHp}）");
+            });
         }
         else if (!IsFullyRecovered)
         {

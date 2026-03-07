@@ -8,15 +8,7 @@ namespace Game.Core.Save;
 /// </summary>
 public class SessionStateData
 {
-    public string PlayerName { get; set; } = "";
-    public int Level { get; set; }
-    public int MaxHp { get; set; }
-    public int CurrentHp { get; set; }
-    public int Attack { get; set; }
-    public int Defense { get; set; }
-    public int Experience { get; set; }
-    public int Gold { get; set; }
-    public double CarryCapacity { get; set; }
+    public List<PlayerData> Players { get; set; } = [];
 
     public int CurrentFloor { get; set; }
     public int RoomsExplored { get; set; }

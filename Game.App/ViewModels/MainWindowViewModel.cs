@@ -53,7 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
 
     public void StartGame(string playerName)
     {
-        _engine.StartNewGame(playerName);
+        _engine.StartNewGame([playerName]);
 
         _stopwatch.Restart();
         _tickTimer.Start();
@@ -63,7 +63,8 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
 
     public void UsePotion()
     {
-        _engine.UsePotion();
+        var leader = _engine.Session.Party.Members[0];
+        _engine.UsePotion(leader.Id);
         // State change will be picked up on next tick via SyncUiState
     }
 
@@ -102,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
     private void SyncUiState()
     {
         var s = _engine.Session;
-        var p = s.Player;
+        var p = s.Party.Members[0];
         var e = s.CurrentEnemy;
 
         _store.Update(new UiState(
