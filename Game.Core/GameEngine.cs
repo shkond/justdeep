@@ -1,3 +1,4 @@
+using Game.Core.Items;
 using Game.Core.Save;
 using Game.Core.States;
 
@@ -14,12 +15,14 @@ public class GameEngine
     public List<IGameComponent> Components { get; } = [];
     public XoshiroRng Rng { get; private set; }
     public ulong RunSeed { get; private set; }
+    public ItemRegistry ItemRegistry { get; private set; }
 
     public GameEngine()
     {
         // Initialized to a stub session in MainMenu state
         Session = new GameSession(new Player("冒険者"));
         Rng = new XoshiroRng(0);
+        ItemRegistry = ItemRegistry.CreateDefault();
         CurrentMode = new InDungeonMode(); // Placeholder, not entered yet
     }
 
@@ -34,6 +37,7 @@ public class GameEngine
     {
         RunSeed = seed ?? (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Rng = new XoshiroRng(RunSeed);
+        ItemRegistry = ItemRegistry.CreateDefault();
 
         Session = new GameSession(new Player(playerName))
         {
