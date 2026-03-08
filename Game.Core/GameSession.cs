@@ -24,7 +24,7 @@ public class GameSession
     /// Populated at construction with Player and Stash containers.
     /// Loot containers are added/removed as needed during gameplay.
     /// </summary>
-    public Dictionary<InventoryKind, InventoryContainer> Inventories { get; set; } = [];
+    public Dictionary<InventoryKind, InventoryContainer> SharedInventories { get; set; } = [];
 
     public GameSession(Party party)
     {
@@ -33,12 +33,25 @@ public class GameSession
         RoomsExplored = 0;
         CurrentStateId = GameState.MainMenu;
 
-        // Default containers
-        var leader = Party.Members[0];
-        Inventories[InventoryKind.Player] =
-            InventoryContainer.Create(InventoryKind.Player, leader.CarryCapacity);
-        Inventories[InventoryKind.Stash] =
+        // Default shared containers
+        SharedInventories[InventoryKind.Stash] =
             InventoryContainer.Create(InventoryKind.Stash); // unlimited
+    }
+
+    public InventoryContainer GetSharedInventory(InventoryKind kind)
+    {
+        if (!IsSharedKind(kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind,
+                "Only shared inventory kinds are allowed.");
+        }
+
+        if (!SharedInventories.TryGetValue(kind, out var container))
+        {
+            throw new KeyNotFoundException($"Shared inventory '{kind}' was not found.");
+        }
+
+        return container;
     }
 
     public void AddToLog(string message)
@@ -63,6 +76,7 @@ public class GameSession
                 Experience = player.Experience,
                 Gold = player.Gold,
                 CarryCapacity = player.CarryCapacity,
+                PersonalInventory = ToContainerData(player.PersonalInventory),
             }).ToList(),
 
             CurrentFloor = CurrentFloor,
@@ -70,23 +84,16 @@ public class GameSession
             GameLog = new List<string>(GameLog),
         };
 
-        // Serialize inventories
-        foreach (var (kind, container) in Inventories)
+        // Serialize shared inventories only
+        foreach (var (kind, container) in SharedInventories)
         {
-            var containerData = new InventoryContainerData
+            if (!IsSharedKind(kind))
             {
-                Kind = kind,
-                MaxWeight = container.Rules.MaxWeight,
-            };
-            foreach (var entry in container.Entries)
-            {
-                containerData.Entries.Add(new InventoryEntryData
-                {
-                    DefinitionId = entry.DefinitionId,
-                    Quantity = entry.Quantity,
-                });
+                throw new InvalidOperationException(
+                    $"Non-shared inventory kind '{kind}' cannot be serialized as shared inventory.");
             }
-            data.Inventories.Add(containerData);
+
+            data.SharedInventories.Add(ToContainerData(container));
         }
 
         return data;
@@ -103,7 +110,7 @@ public class GameSession
         var members = data.Players.Select(p =>
         {
             var id = Guid.TryParse(p.Id, out var parsedId) ? parsedId : Guid.NewGuid();
-            return new Player(id, p.Name)
+            var player = new Player(id, p.Name)
             {
                 Level = p.Level,
                 MaxHp = p.MaxHp,
@@ -114,6 +121,26 @@ public class GameSession
                 Gold = p.Gold,
                 CarryCapacity = p.CarryCapacity,
             };
+
+            // Resilience for broken/incomplete saves:
+            // if personal inventory is missing, create a safe empty one.
+            if (p.PersonalInventory is null)
+            {
+                player.PersonalInventory = InventoryContainer.Create(
+                    InventoryKind.Personal, player.CarryCapacity);
+            }
+            else
+            {
+                if (p.PersonalInventory.Kind != InventoryKind.Personal)
+                {
+                    throw new InvalidOperationException(
+                        $"Invalid personal inventory kind '{p.PersonalInventory.Kind}' for player '{p.Name}'.");
+                }
+
+                player.PersonalInventory = FromContainerData(p.PersonalInventory);
+            }
+
+            return player;
         }).ToList();
 
         var session = new GameSession(new Party(members))
@@ -123,25 +150,56 @@ public class GameSession
             GameLog = new List<string>(data.GameLog),
         };
 
-        // Restore inventories (replace the defaults created by the constructor)
-        if (data.Inventories.Count > 0)
+        // Restore shared inventories (replace the defaults created by the constructor)
+        if (data.SharedInventories.Count > 0)
         {
-            session.Inventories.Clear();
-            foreach (var containerData in data.Inventories)
+            session.SharedInventories.Clear();
+            foreach (var containerData in data.SharedInventories)
             {
-                var container = InventoryContainer.Create(
-                    containerData.Kind, containerData.MaxWeight);
-
-                foreach (var entryData in containerData.Entries)
+                if (!IsSharedKind(containerData.Kind))
                 {
-                    container.Entries.Add(
-                        InventoryEntry.Of(entryData.DefinitionId, entryData.Quantity));
+                    throw new InvalidOperationException(
+                        $"Invalid shared inventory kind '{containerData.Kind}' in session snapshot.");
                 }
 
-                session.Inventories[containerData.Kind] = container;
+                session.SharedInventories[containerData.Kind] = FromContainerData(containerData);
             }
         }
 
         return session;
+    }
+
+    private static bool IsSharedKind(InventoryKind kind)
+        => kind is InventoryKind.Stash or InventoryKind.Loot;
+
+    private static InventoryContainerData ToContainerData(InventoryContainer container)
+    {
+        var containerData = new InventoryContainerData
+        {
+            Kind = container.Kind,
+            MaxWeight = container.Rules.MaxWeight,
+        };
+
+        foreach (var entry in container.Entries)
+        {
+            containerData.Entries.Add(new InventoryEntryData
+            {
+                DefinitionId = entry.DefinitionId,
+                Quantity = entry.Quantity,
+            });
+        }
+
+        return containerData;
+    }
+
+    private static InventoryContainer FromContainerData(InventoryContainerData containerData)
+    {
+        var container = InventoryContainer.Create(containerData.Kind, containerData.MaxWeight);
+        foreach (var entryData in containerData.Entries)
+        {
+            container.Entries.Add(InventoryEntry.Of(entryData.DefinitionId, entryData.Quantity));
+        }
+
+        return container;
     }
 }

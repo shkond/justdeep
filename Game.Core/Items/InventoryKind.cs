@@ -6,8 +6,8 @@ namespace Game.Core.Items;
 /// </summary>
 public enum InventoryKind
 {
-    /// <summary>Player's carried inventory.</summary>
-    Player,
+    /// <summary>A player's personal carried inventory.</summary>
+    Personal,
 
     /// <summary>Permanent stash / warehouse.</summary>
     Stash,

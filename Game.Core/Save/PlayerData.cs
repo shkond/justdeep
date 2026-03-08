@@ -12,4 +12,5 @@ public class PlayerData
     public int Experience { get; set; }
     public int Gold { get; set; }
     public double CarryCapacity { get; set; }
+    public InventoryContainerData? PersonalInventory { get; set; }
 }

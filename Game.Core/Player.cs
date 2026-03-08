@@ -18,6 +18,12 @@ public class Player
     /// <summary>Maximum total weight the player can carry.</summary>
     public double CarryCapacity { get; set; } = 50.0;
 
+    /// <summary>
+    /// Player-owned personal inventory container.
+    /// Inventory mutations are performed via <see cref="InventoryService"/>.
+    /// </summary>
+    public InventoryContainer PersonalInventory { get; set; }
+
     // ── Equipment ──
     public Dictionary<EquipmentSlot, ItemInstance?> Equipment { get; } = new()
     {
@@ -42,6 +48,7 @@ public class Player
         Defense = 5;
         Experience = 0;
         Gold = 50;
+        PersonalInventory = InventoryContainer.Create(InventoryKind.Personal, CarryCapacity);
     }
 
     public bool IsAlive => CurrentHp > 0;

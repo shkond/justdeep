@@ -23,7 +23,7 @@ public class InventorySystemTests
     [Fact]
     public void ComputeWeight_EmptyContainer_ReturnsZero()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         Assert.Equal(0, InventoryService.ComputeWeight(container, registry));
@@ -32,7 +32,7 @@ public class InventorySystemTests
     [Fact]
     public void ComputeWeight_WithItems_SumsCorrectly()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         InventoryService.AddItem(container, "iron_ore", 5, registry); // 5 * 2.0 = 10
@@ -48,7 +48,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_NewItem_CreatesEntry()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         var result = InventoryService.AddItem(container, "iron_ore", 3, registry);
@@ -62,7 +62,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_ExistingStack_MergesQuantity()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         InventoryService.AddItem(container, "iron_ore", 3, registry);
@@ -90,7 +90,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_WeightExceeded_Fails()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 5.0);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 5.0);
         var registry = CreateRegistry();
 
         // iron_ore weight=2.0, try to add 3 = 6.0 > 5.0
@@ -104,7 +104,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_ExactlyAtMaxWeight_Succeeds()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 6.0);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 6.0);
         var registry = CreateRegistry();
 
         // iron_ore weight=2.0, add 3 = 6.0 == 6.0
@@ -128,7 +128,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_UnknownItem_Fails()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         var result = InventoryService.AddItem(container, "nonexistent", 1, registry);
@@ -140,7 +140,7 @@ public class InventorySystemTests
     [Fact]
     public void AddItem_ZeroQuantity_Fails()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         var result = InventoryService.AddItem(container, "iron_ore", 0, registry);
@@ -155,7 +155,7 @@ public class InventorySystemTests
     [Fact]
     public void RemoveItem_PartialQuantity_DecreasesStack()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         InventoryService.AddItem(container, "iron_ore", 10, registry);
@@ -169,7 +169,7 @@ public class InventorySystemTests
     [Fact]
     public void RemoveItem_AllQuantity_RemovesEntry()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         InventoryService.AddItem(container, "iron_ore", 5, registry);
@@ -182,7 +182,7 @@ public class InventorySystemTests
     [Fact]
     public void RemoveItem_NotEnough_Fails()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 100);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 100);
         var registry = CreateRegistry();
 
         InventoryService.AddItem(container, "iron_ore", 3, registry);
@@ -202,7 +202,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var loot = InventoryContainer.Create(InventoryKind.Loot);
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
 
         InventoryService.AddItem(loot, "iron_ore", 5, registry);
         var result = InventoryService.MoveItem(loot, player, "iron_ore", 5, registry);
@@ -217,7 +217,7 @@ public class InventorySystemTests
     public void MoveItem_PlayerToStash_Success()
     {
         var registry = CreateRegistry();
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
         var stash = InventoryContainer.Create(InventoryKind.Stash);
 
         InventoryService.AddItem(player, "healing_potion", 5, registry);
@@ -234,7 +234,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var stash = InventoryContainer.Create(InventoryKind.Stash);
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
 
         InventoryService.AddItem(stash, "iron_sword", 1, registry);
         var result = InventoryService.MoveItem(stash, player, "iron_sword", 1, registry);
@@ -249,7 +249,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var stash = InventoryContainer.Create(InventoryKind.Stash);
-        var player = InventoryContainer.Create(InventoryKind.Player, 3.0);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 3.0);
 
         InventoryService.AddItem(stash, "iron_ore", 5, registry); // weight=2.0 each
         var result = InventoryService.MoveItem(stash, player, "iron_ore", 5, registry);
@@ -265,7 +265,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var loot = InventoryContainer.Create(InventoryKind.Loot);
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
 
         InventoryService.AddItem(loot, "iron_ore", 10, registry);
         var result = InventoryService.MoveItem(loot, player, "iron_ore", 4, registry);
@@ -280,7 +280,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var loot = InventoryContainer.Create(InventoryKind.Loot);
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
 
         InventoryService.AddItem(loot, "iron_ore", 2, registry);
         var result = InventoryService.MoveItem(loot, player, "iron_ore", 5, registry);
@@ -294,7 +294,7 @@ public class InventorySystemTests
     {
         var registry = CreateRegistry();
         var loot = InventoryContainer.Create(InventoryKind.Loot);
-        var player = InventoryContainer.Create(InventoryKind.Player, 100);
+        var player = InventoryContainer.Create(InventoryKind.Personal, 100);
 
         InventoryService.AddItem(player, "iron_ore", 3, registry);
         InventoryService.AddItem(loot, "iron_ore", 5, registry);
@@ -313,9 +313,9 @@ public class InventorySystemTests
     [Fact]
     public void InventoryContainer_Create_SetsKindAndRules()
     {
-        var container = InventoryContainer.Create(InventoryKind.Player, 50.0);
+        var container = InventoryContainer.Create(InventoryKind.Personal, 50.0);
 
-        Assert.Equal(InventoryKind.Player, container.Kind);
+        Assert.Equal(InventoryKind.Personal, container.Kind);
         Assert.Equal(50.0, container.Rules.MaxWeight);
         Assert.Empty(container.Entries);
     }
@@ -332,18 +332,18 @@ public class InventorySystemTests
     // ══════════════════════════════════════════════
 
     [Fact]
-    public void GameSession_HasDefaultPlayerAndStashContainers()
+    public void GameSession_HasDefaultPersonalAndSharedStashInventories()
     {
         var session = new GameSession(new Party([new Player("Hero")]));
 
-        Assert.True(session.Inventories.ContainsKey(InventoryKind.Player));
-        Assert.True(session.Inventories.ContainsKey(InventoryKind.Stash));
+        Assert.NotNull(session.Party.Members[0].PersonalInventory);
+        Assert.True(session.SharedInventories.ContainsKey(InventoryKind.Stash));
 
-        var playerContainer = session.Inventories[InventoryKind.Player];
-        Assert.Equal(InventoryKind.Player, playerContainer.Kind);
-        Assert.Equal(50.0, playerContainer.Rules.MaxWeight); // default CarryCapacity
+        var personalInventory = session.Party.Members[0].PersonalInventory;
+        Assert.Equal(InventoryKind.Personal, personalInventory.Kind);
+        Assert.Equal(50.0, personalInventory.Rules.MaxWeight); // default CarryCapacity
 
-        var stash = session.Inventories[InventoryKind.Stash];
+        var stash = session.SharedInventories[InventoryKind.Stash];
         Assert.Equal(0, stash.Rules.MaxWeight); // unlimited
     }
 
@@ -354,12 +354,12 @@ public class InventorySystemTests
         var session = new GameSession(new Party([new Player("Hero")]));
 
         // Add items to player inventory
-        var playerInv = session.Inventories[InventoryKind.Player];
+        var playerInv = session.Party.Members[0].PersonalInventory;
         InventoryService.AddItem(playerInv, "iron_ore", 5, registry);
         InventoryService.AddItem(playerInv, "healing_potion", 3, registry);
 
         // Add items to stash
-        var stash = session.Inventories[InventoryKind.Stash];
+        var stash = session.SharedInventories[InventoryKind.Stash];
         InventoryService.AddItem(stash, "iron_sword", 1, registry);
 
         // Snapshot and restore
@@ -367,7 +367,7 @@ public class InventorySystemTests
         var restored = GameSession.FromSnapshot(snapshot);
 
         // Verify player inventory
-        var restoredPlayerInv = restored.Inventories[InventoryKind.Player];
+        var restoredPlayerInv = restored.Party.Members[0].PersonalInventory;
         Assert.Equal(50.0, restoredPlayerInv.Rules.MaxWeight);
         Assert.Equal(2, restoredPlayerInv.Entries.Count);
 
@@ -377,9 +377,84 @@ public class InventorySystemTests
         Assert.Equal(3, potionEntry.Quantity);
 
         // Verify stash
-        var restoredStash = restored.Inventories[InventoryKind.Stash];
+        var restoredStash = restored.SharedInventories[InventoryKind.Stash];
         Assert.Single(restoredStash.Entries);
         Assert.Equal("iron_sword", restoredStash.Entries[0].DefinitionId);
+    }
+
+    [Fact]
+    public void GameSession_Snapshot_RestoresIndependentPersonalInventories_ForMultiplePlayers()
+    {
+        var registry = CreateRegistry();
+        var party = new Party([new Player("Hero"), new Player("Mage")]);
+        var session = new GameSession(party);
+
+        InventoryService.AddItem(session.Party.Members[0].PersonalInventory, "iron_ore", 2, registry);
+        InventoryService.AddItem(session.Party.Members[1].PersonalInventory, "healing_potion", 7, registry);
+
+        var snapshot = session.ToSnapshot();
+        var restored = GameSession.FromSnapshot(snapshot);
+
+        var restoredHero = restored.Party.Members[0].PersonalInventory;
+        var restoredMage = restored.Party.Members[1].PersonalInventory;
+
+        Assert.Single(restoredHero.Entries);
+        Assert.Equal("iron_ore", restoredHero.Entries[0].DefinitionId);
+        Assert.Equal(2, restoredHero.Entries[0].Quantity);
+
+        Assert.Single(restoredMage.Entries);
+        Assert.Equal("healing_potion", restoredMage.Entries[0].DefinitionId);
+        Assert.Equal(7, restoredMage.Entries[0].Quantity);
+    }
+
+    [Fact]
+    public void GameSession_FromSnapshot_WhenPersonalInventoryMissing_CreatesEmptyPersonalInventory()
+    {
+        var session = new GameSession(new Party([new Player("Hero") { CarryCapacity = 75.0 }]));
+        var snapshot = session.ToSnapshot();
+        snapshot.Players[0].PersonalInventory = null;
+
+        var restored = GameSession.FromSnapshot(snapshot);
+        var restoredPlayer = restored.Party.Members[0];
+
+        Assert.NotNull(restoredPlayer.PersonalInventory);
+        Assert.Equal(InventoryKind.Personal, restoredPlayer.PersonalInventory.Kind);
+        Assert.Empty(restoredPlayer.PersonalInventory.Entries);
+        Assert.Equal(75.0, restoredPlayer.PersonalInventory.Rules.MaxWeight);
+    }
+
+    [Fact]
+    public void GameSession_Snapshot_RestoresSharedInventories_WithSharedKindsOnly()
+    {
+        var registry = CreateRegistry();
+        var session = new GameSession(new Party([new Player("Hero")]));
+
+        var stash = session.GetSharedInventory(InventoryKind.Stash);
+        InventoryService.AddItem(stash, "iron_ore", 3, registry);
+
+        session.SharedInventories[InventoryKind.Loot] = InventoryContainer.Create(InventoryKind.Loot);
+        InventoryService.AddItem(session.GetSharedInventory(InventoryKind.Loot), "healing_potion", 2, registry);
+
+        var restored = GameSession.FromSnapshot(session.ToSnapshot());
+
+        Assert.All(restored.SharedInventories.Keys, kind =>
+            Assert.True(kind is InventoryKind.Stash or InventoryKind.Loot));
+        Assert.DoesNotContain(InventoryKind.Personal, restored.SharedInventories.Keys);
+    }
+
+    [Fact]
+    public void GameSession_FromSnapshot_ThrowsOnInvalidSharedInventoryKind()
+    {
+        var session = new GameSession(new Party([new Player("Hero")]));
+        var snapshot = session.ToSnapshot();
+
+        snapshot.SharedInventories.Add(new Game.Core.Save.InventoryContainerData
+        {
+            Kind = InventoryKind.Personal,
+            MaxWeight = 10,
+        });
+
+        Assert.Throws<InvalidOperationException>(() => GameSession.FromSnapshot(snapshot));
     }
 
     [Fact]
@@ -403,6 +478,8 @@ public class InventorySystemTests
     {
         var player = new Player("Hero");
         Assert.Equal(50.0, player.CarryCapacity);
+        Assert.Equal(InventoryKind.Personal, player.PersonalInventory.Kind);
+        Assert.Equal(50.0, player.PersonalInventory.Rules.MaxWeight);
     }
 
     [Fact]

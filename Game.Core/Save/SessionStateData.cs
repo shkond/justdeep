@@ -14,8 +14,8 @@ public class SessionStateData
     public int RoomsExplored { get; set; }
     public List<string> GameLog { get; set; } = [];
 
-    // ── Inventory ──
-    public List<InventoryContainerData> Inventories { get; set; } = [];
+    // ── Shared inventories only (Stash / Loot) ──
+    public List<InventoryContainerData> SharedInventories { get; set; } = [];
 }
 
 /// <summary>
