@@ -33,12 +33,18 @@ public partial class BasePanelViewModel : PanelViewModelBase
 
         if (IsVisible)
         {
-            HpPercent = state.MaxHp > 0
-                ? (double)state.CurrentHp / state.MaxHp * 100 : 100;
-            CanLaunchExpedition = state.CurrentHp >= state.MaxHp;
-            BaseStatusText = state.CurrentHp >= state.MaxHp
-                ? "HP全回復！ 遠征の準備が整った。"
-                : $"休息中… HP: {state.CurrentHp}/{state.MaxHp}";
+            var player = state.Players.Count > 0 ? state.Players[0] : null;
+            var currentHp = player?.CurrentHp ?? 0;
+            var maxHp = player?.MaxHp ?? 0;
+
+            HpPercent = maxHp > 0
+                ? (double)currentHp / maxHp * 100 : 0;
+            CanLaunchExpedition = player is not null && currentHp >= maxHp;
+            BaseStatusText = player is null
+                ? "休息中… プレイヤー情報なし"
+                : currentHp >= maxHp
+                    ? "HP全回復！ 遠征の準備が整った。"
+                    : $"休息中… HP: {currentHp}/{maxHp}";
         }
     }
 

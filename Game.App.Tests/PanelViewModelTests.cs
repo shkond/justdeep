@@ -9,19 +9,45 @@ namespace Game.App.Tests;
 /// </summary>
 public class StubGameCommands : IGameCommands
 {
-    public string? LastStartedPlayerName { get; private set; }
+    public int StartGameCallCount { get; private set; }
     public int UsePotionCallCount { get; private set; }
     public int LaunchExpeditionCallCount { get; private set; }
+    public List<Guid> UsePotionTargets { get; } = [];
 
-    public void StartGame(string playerName) => LastStartedPlayerName = playerName;
-    public void UsePotion() => UsePotionCallCount++;
+    public void StartGame() => StartGameCallCount++;
+    public void UsePotion(Guid playerId)
+    {
+        UsePotionCallCount++;
+        UsePotionTargets.Add(playerId);
+    }
+
     public void LaunchExpedition() => LaunchExpeditionCallCount++;
 }
 
 public class PanelViewModelTests
 {
+    private static PlayerSnapshot MakePlayer(
+        string name = "Hero",
+        int level = 1,
+        int currentHp = 100,
+        int maxHp = 100,
+        int attack = 10,
+        int defense = 5,
+        int experience = 0,
+        int gold = 0) =>
+        new(
+            PlayerId: Guid.NewGuid(),
+            Name: name,
+            Level: level,
+            CurrentHp: currentHp,
+            MaxHp: maxHp,
+            Attack: attack,
+            Defense: defense,
+            Experience: experience,
+            Gold: gold);
+
     private static UiState MakeState(GameState mode, string playerName = "Hero") =>
-        UiState.Initial with { Mode = mode, PlayerName = playerName };
+        UiState.Initial with { Mode = mode, Players = [MakePlayer(name: playerName)] };
 
     // ══════════════════════════════════════════════
     //  MainMenuPanelViewModel
@@ -42,6 +68,18 @@ public class PanelViewModelTests
         store.Update(MakeState(mode));
 
         Assert.Equal(expected, vm.IsVisible);
+    }
+
+    [Fact]
+    public void MainMenu_StartGame_InvokesCommand()
+    {
+        var store = new UiStateStore();
+        var commands = new StubGameCommands();
+        var vm = new MainMenuPanelViewModel(store, commands);
+
+        vm.StartGameCommand.Execute(null);
+
+        Assert.Equal(1, commands.StartGameCallCount);
     }
 
     // ══════════════════════════════════════════════
@@ -74,14 +112,18 @@ public class PanelViewModelTests
         store.Update(UiState.Initial with
         {
             Mode = GameState.InDungeon,
-            PlayerName = "テスト勇者",
-            Level = 5,
-            CurrentHp = 80,
-            MaxHp = 100,
-            Attack = 20,
-            Defense = 10,
-            Experience = 250,
-            Gold = 500
+            Players =
+            [
+                MakePlayer(
+                    name: "テスト勇者",
+                    level: 5,
+                    currentHp: 80,
+                    maxHp: 100,
+                    attack: 20,
+                    defense: 10,
+                    experience: 250,
+                    gold: 500)
+            ]
         });
 
         Assert.Contains("テスト勇者", vm.PlayerStats);
@@ -103,7 +145,7 @@ public class PanelViewModelTests
             Mode = GameState.InDungeon,
             CurrentFloor = 3,
             RoomsExplored = 2,
-            PlayerName = "Hero"
+            Players = [MakePlayer(name: "Hero")]
         });
 
         Assert.Contains("ダンジョン 3階", vm.GameStatus);
@@ -154,7 +196,7 @@ public class PanelViewModelTests
             EnemyMaxHp = 50,
             EnemyAttack = 12,
             EnemyDefense = 5,
-            PlayerName = "Hero"
+            Players = [MakePlayer(name: "Hero")]
         });
 
         Assert.Contains("ゴブリン", vm.EnemyInfo);
@@ -201,9 +243,7 @@ public class PanelViewModelTests
         store.Update(UiState.Initial with
         {
             Mode = GameState.InBase,
-            CurrentHp = 50,
-            MaxHp = 100,
-            PlayerName = "Hero"
+            Players = [MakePlayer(name: "Hero", currentHp: 50, maxHp: 100)]
         });
 
         Assert.Contains("休息中", vm.BaseStatusText);
@@ -221,9 +261,7 @@ public class PanelViewModelTests
         store.Update(UiState.Initial with
         {
             Mode = GameState.InBase,
-            CurrentHp = 100,
-            MaxHp = 100,
-            PlayerName = "Hero"
+            Players = [MakePlayer(name: "Hero", currentHp: 100, maxHp: 100)]
         });
 
         Assert.Contains("HP全回復", vm.BaseStatusText);
@@ -245,7 +283,7 @@ public class PanelViewModelTests
         for (int i = 1; i <= 20; i++)
             log.Add($"Entry {i}");
 
-        store.Update(UiState.Initial with { GameLog = log, PlayerName = "Hero" });
+        store.Update(UiState.Initial with { GameLog = log, Players = [MakePlayer(name: "Hero")] });
 
         // Should show entries 6-20 (last 15)
         Assert.DoesNotContain("Entry 5", vm.ActionLog);

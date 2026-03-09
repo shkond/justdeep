@@ -28,13 +28,22 @@ public partial class PlayerInfoPanelViewModel : PanelViewModelBase
 
         if (!IsVisible) return;
 
-        PlayerStats = $"【{state.PlayerName}】\n" +
-                     $"レベル: {state.Level}\n" +
-                     $"HP: {state.CurrentHp}/{state.MaxHp}\n" +
-                     $"攻撃力: {state.Attack}\n" +
-                     $"防御力: {state.Defense}\n" +
-                     $"経験値: {state.Experience}/{state.Level * 100}\n" +
-                     $"ゴールド: {state.Gold}";
+        var player = state.Players.Count > 0 ? state.Players[0] : null;
+
+        if (player is null)
+        {
+            PlayerStats = "【プレイヤー未設定】";
+        }
+        else
+        {
+            PlayerStats = $"【{player.Name}】\n" +
+                         $"レベル: {player.Level}\n" +
+                         $"HP: {player.CurrentHp}/{player.MaxHp}\n" +
+                         $"攻撃力: {player.Attack}\n" +
+                         $"防御力: {player.Defense}\n" +
+                         $"経験値: {player.Experience}/{player.Level * 100}\n" +
+                         $"ゴールド: {player.Gold}";
+        }
 
         GameStatus = state.Mode == GameState.InBase
             ? "現在地: 拠点"

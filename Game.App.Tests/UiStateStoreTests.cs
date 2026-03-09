@@ -93,10 +93,26 @@ public class UiStateStoreTests
     public void Update_Current_ReflectsNewState()
     {
         var store = new UiStateStore();
-        var newState = UiState.Initial with { PlayerName = "テスト" };
+        var newState = UiState.Initial with
+        {
+            Players =
+            [
+                new PlayerSnapshot(
+                    PlayerId: Guid.NewGuid(),
+                    Name: "テスト",
+                    Level: 1,
+                    CurrentHp: 100,
+                    MaxHp: 100,
+                    Attack: 10,
+                    Defense: 5,
+                    Experience: 0,
+                    Gold: 0)
+            ]
+        };
 
         store.Update(newState);
 
-        Assert.Equal("テスト", store.Current.PlayerName);
+        Assert.Single(store.Current.Players);
+        Assert.Equal("テスト", store.Current.Players[0].Name);
     }
 }

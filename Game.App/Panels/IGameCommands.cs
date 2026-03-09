@@ -1,3 +1,5 @@
+using System;
+
 namespace Game.App.Panels;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Game.App.Panels;
 /// </summary>
 public interface IGameCommands
 {
-    void StartGame(string playerName);
-    void UsePotion();
+    void StartGame();
+    void UsePotion(Guid playerId);
     void LaunchExpedition();
 }

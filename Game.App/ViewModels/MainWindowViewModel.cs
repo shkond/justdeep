@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Game.Core;
@@ -10,6 +11,8 @@ namespace Game.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase, IGameCommands
 {
+    private static readonly string[] StubPartyNames = ["Adventurer1"];
+
     private readonly GameEngine _engine;
     private readonly DispatcherTimer _tickTimer;
     private readonly Stopwatch _stopwatch;
@@ -51,9 +54,9 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
     //  IGameCommands implementation
     // ══════════════════════════════════════════════
 
-    public void StartGame(string playerName)
+    public void StartGame()
     {
-        _engine.StartNewGame([playerName]);
+        _engine.StartNewGame(StubPartyNames);
 
         _stopwatch.Restart();
         _tickTimer.Start();
@@ -61,10 +64,9 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
         SyncUiState();
     }
 
-    public void UsePotion()
+    public void UsePotion(Guid playerId)
     {
-        var leader = _engine.Session.Party.Members[0];
-        _engine.UsePotion(leader.Id);
+        _engine.UsePotion(playerId);
         // State change will be picked up on next tick via SyncUiState
     }
 
@@ -103,19 +105,23 @@ public partial class MainWindowViewModel : ViewModelBase, IGameCommands
     private void SyncUiState()
     {
         var s = _engine.Session;
-        var p = s.Party.Members[0];
         var e = s.CurrentEnemy;
+        var players = s.Party.Members
+            .Select(p => new PlayerSnapshot(
+                PlayerId: p.Id,
+                Name: p.Name,
+                Level: p.Level,
+                CurrentHp: p.CurrentHp,
+                MaxHp: p.MaxHp,
+                Attack: p.Attack,
+                Defense: p.Defense,
+                Experience: p.Experience,
+                Gold: p.Gold))
+            .ToArray();
 
         _store.Update(new UiState(
             Mode: s.CurrentStateId,
-            PlayerName: p.Name,
-            Level: p.Level,
-            CurrentHp: p.CurrentHp,
-            MaxHp: p.MaxHp,
-            Attack: p.Attack,
-            Defense: p.Defense,
-            Experience: p.Experience,
-            Gold: p.Gold,
+            Players: players,
             CurrentFloor: s.CurrentFloor,
             RoomsExplored: s.RoomsExplored,
             EnemyName: e?.Name,
